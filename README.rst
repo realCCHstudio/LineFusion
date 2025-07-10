@@ -1,4 +1,4 @@
-plasio
+LineFusion
 -------------------------------------------------------------------------------
 
 plasio is a project by `Uday Verma`_ and `Howard Butler`_ that implements point
