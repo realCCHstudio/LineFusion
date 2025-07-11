@@ -93,7 +93,7 @@ var withRefresh = require('./util').withRefresh;
             var additionControls = this.state.enabled ?
                 (<div>
                     <div id="inun"/>
-                    <h5 className="not-first">Adjust Opacity of Inundation plane</h5>
+                    <h5 className="not-first">调整淹没平面的透明度</h5>
                     <div id="inun-opacity"/>
                 </div>) :
                     <div /> ;
@@ -105,7 +105,7 @@ var withRefresh = require('./util').withRefresh;
                             className={classes}
                             style={{marginBottom: '15px'}}
                             onClick={withRefresh(this.toggle)}>
-                        {this.state.enabled? "Disable" : "Enable"}
+                        {this.state.enabled? "禁用" : "启用"}
                     </button>
                     {additionControls}
                 </div>
