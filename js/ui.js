@@ -611,47 +611,19 @@ var Promise = require("bluebird"),
 
         $(".btn-file").on("click", function(e) {
             e.preventDefault();
-            console.log("Doing shit!");
-            console.log($("#filebrowser"));
             $("#filebrowser").click();
         });
 
-
         $(document).on('change', '#filebrowser', withRefresh(function(e) {
             e.preventDefault();
-
-            console.log("Selected a file");
-
             var input = $(this);
             var files = input.get(0).files;
-
             $.event.trigger({
                 type: "plasio.loadfiles.local",
                 files: toArray(files),
                 name: files.length === 1 ? files[0].name : 'Multiple Files'
             });
         }));
-
-        $("#browse").on("click", "a", withRefresh(function(e) {
-            e.preventDefault();
-
-            var target = $(this).attr("href");
-
-            // if we don't have LAZ available, we download the LAS version
-            //
-            console.log("Will load", target);
-
-            var name = target.substring(target.lastIndexOf('/')+1);
-
-            $.event.trigger({
-                type: "plasio.loadfiles.remote",
-                url: target,
-                name: name
-            });
-        }));
-
-        // TODO: May be enable again one day?
-        //ReactDOM.render(<controls.openGreyhoundPipelineButton />, $("#openGreyhoundButton").get(0));
     };
 
     var cancellableLoad = function(fDataLoader, files, name) {
