@@ -307,15 +307,15 @@ var Promise = require("bluebird"),
 
     var loadFileInformation = function(header) {
         $(".props table").html(
-            "<tr><td>Name</td><td>" + header.name + "</td></tr>" +
-            "<tr><td>File Version</td><td>" + header.versionAsString + "</td></tr>" +
-            "<tr><td>Compressed?</td><td>" + (header.isCompressed ? "Yes" : "No") + "</td></tr>" +
+            "<tr><td>名称</td><td>" + header.name + "</td></tr>" +
+            "<tr><td>文件版本</td><td>" + header.versionAsString + "</td></tr>" +
+            "<tr><td>是否压缩</td><td>" + (header.isCompressed ? "是" : "否") + "</td></tr>" +
             //"<tr><td>Color?</td><td>" + (batcherHasColor ? "Yes" : "No") + "</td></tr>" +
             //"<tr><td>Intensity?</td><td>" + (batcherHasIntensity ? "Yes" : "No") + "</td></tr>" +
-            "<tr><td>Total Points</td><td>" + numberWithCommas(header.pointsCount) + " (" +
+            "<tr><td>点数</td><td>" + numberWithCommas(header.pointsCount) + " (" +
             numberWithCommas(header.totalRead) + ") " + "</td></tr>" +
-            "<tr><td>Point Format ID</td><td>" + header.pointsFormatId + "</td></tr>" +
-            "<tr><td>Point Record Size</td><td>" + header.pointsStructSize + "</td></tr>").show();
+            "<tr><td>点格式ID</td><td>" + header.pointsFormatId + "</td></tr>" +
+            "<tr><td>点记录大小</td><td>" + header.pointsStructSize + "</td></tr>").show();
     };
 
     var setupLoadHandlers = function() {
@@ -496,7 +496,7 @@ var Promise = require("bluebird"),
             $("#loadError").html(
                 '<div class="alert alert-info alert-dismissable">' +
                 '<button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>' +
-                'The file load operation was cancelled' +
+                '文件加载操作已取消' +
                 '</div>').show();
 
             console.log("Operation cancelled!!");
@@ -507,7 +507,7 @@ var Promise = require("bluebird"),
             $("#loadError").html(
                 '<div class="alert alert-danger alert-dismissable">' +
                 '<button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>' +
-                '<strong>Error!</strong> ' + e.error +
+                '<strong>错误！</strong> ' + e.error +
                 '</div>').show();
 
             cleanup();
@@ -926,7 +926,7 @@ var Promise = require("bluebird"),
             console.log('Got new batches!');
 
             var $h5 = $(".switch-inst");
-            $h5.html("Some information about the loaded data.");
+            $h5.html("已加载数据的相关信息。");
             $("#multi-files").html("");
             $(".auto-play").hide();
 
@@ -935,7 +935,7 @@ var Promise = require("bluebird"),
                 $("#multi-files").html("<div></div>");
                 var $slider = $("#multi-files div");
 
-                $h5.html("Use slider to switch between data sets and view their properties.");
+                $h5.html("使用滑块在数据集之间切换并查看其属性。");
 
                 $sliderToUpdate = $slider;
                 var correctedCG = allBatches[0].batcher.cg.clone();
@@ -1185,9 +1185,9 @@ var Promise = require("bluebird"),
         $(document).on("plasio.webglIsExperimental", function() {
             $("#webglinfo").html("<div class='alert alert-warning'>" +
                                 "<span class='glyphicon glyphicon-info-sign'></span>&nbsp;" +
-                                 "<strong>Experimental WebGL!</strong><br>" +
-                                 "Your browser reports that its WebGL support is experimental." +
-                                 "  You may experience rendering problems.</div>");
+                                 "<strong>实验性 WebGL！</strong><br>" +
+                                 "您的浏览器报告其 WebGL 支持为实验性。" +
+                                 " 您可能会遇到渲染问题。</div>");
             $("#webglinfo").show();
         });
     };
@@ -1440,7 +1440,7 @@ var Promise = require("bluebird"),
             var $title = $modal.find('.modal-title');
             var $body = $modal.find('.modal-body');
 
-            $title.html('plasio Documentation');
+            $title.html('plasio 文档');
             $body.html('');
         });
 
@@ -1458,10 +1458,10 @@ var Promise = require("bluebird"),
                         $('<p>').html(data.summary),
                         $('<video>', { controls: true, autoplay: true, style: 'width:100%;height:auto;' }).append(
                             $('<source>', { src: data.video, type: 'video/webm' }),
-                            "Your player does not support HTML5 video, you can still download the video from <a href='" + data.video + "'>here</a>"
+                            "您的播放器不支持 HTML5 视频，您仍然可以从 <a href='" + data.video + "'>这里</a> 下载视频"
                         ),
                         $('<div>', { class: 'tags' }).append(
-                            $('<p>').text('Tags'),
+                            $('<p>').text('标签'),
                             data.tags.map(function(t) {
                                 return $('<button>', { type: 'button', class:'btn btn-sm btn-default', 'data-offset': t.offset}).text(t.title);
                             })));
