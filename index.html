@@ -73,31 +73,17 @@
 			<div class="p-body">
 				<div id="naclerror" style="display: none"> </div>
 				<div class="labeled-controls">
-					<a class='doc-tag' href="docs/open-a-file.json"><span class="glyphicon glyphicon-question-sign"></span></a>
 					<h4>选择要显示的数据</h4>
-					<h5>选择您自己的文件，或点击下拉菜单选择示例</h5>
-					<div class="btn-group btn-block" id="browseCancel" style="display: none">
-						<button type="button" class="btn btn-default btn-sm">取消</button>
-					</div>
+					<h5>选择您自己的文件。</h5>
 					<div class="btn-group btn-block" id="browse">
 						<button type="button" class="btn btn-default btn-sm btn-file dropdown-lead">
 							浏览
 						</button>
 					</div>
 					<div id="loadingStatus" class="pull-left"></div>
-					<div id="creditsLink">
-						<a data-toggle="modal" href="#" data-target="#creditsPage">数据来源</a>
-					</div>
-					<!--
-                    <div id="gh-container">
-                    <h5>Open a Greyhound Source</h5>
-                    <div id="openGreyhoundButton"></div>
-                    </div>
-                    -->
 				</div>
 
 				<div class="labeled-controls">
-					<a class='doc-tag' href="docs/density.json"><span class="glyphicon glyphicon-question-sign"></span></a>
 					<h4>密度</h4>
 					<h5>设置加载密度。数值越小，加载和显示越快。重新打开文件以应用新密度。</h5>
 					<div id="loadFidelity"></div>
@@ -120,7 +106,6 @@
 
 				<div class="labeled-controls">
 					<h4>放置比例对象</h4>
-					<a class='doc-tag' href="docs/for-scale-objects.json"><span class="glyphicon glyphicon-question-sign"></span></a>
 					<h5>通过 ALT (Mac OS X 上为 OPTION) + 双击点云中的任意位置放置 <span class='noun'>帝国大厦</span>。</h5>
 					<button type="button" class="btn btn-sm btn-default btn-block" id="scale-geoms-clear">清除所有对象</button>
 					<h5 class='not-first'>更改您的世界单位，以便比例对象的大小仍然相关</h5>
