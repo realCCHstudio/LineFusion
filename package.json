@@ -10,7 +10,7 @@
     "classnames": "^2.3.2",
     "connect": "^3.7.0",
     "create-react-class": "^15.7.0",
-    "electron": "^34.3.0",
+    "electron": "^34.5.8",
     "electron-builder": "^25.1.8",
     "envify": "^4.1.0",
     "greyhound.js": "0.0.8",
@@ -98,7 +98,7 @@
     }
   },
   "dependencies": {
-    "electron-log": "^5.0.1",
+    "electron-log": "^5.4.1",
     "puppeteer": "^24.3.0"
   },
   "build": {
@@ -117,7 +117,9 @@
       {
         "from": "build/",
         "to": "build",
-        "filter": ["**/*"]
+        "filter": [
+          "**/*"
+        ]
       }
     ],
     "win": {

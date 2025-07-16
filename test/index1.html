@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <title>LineFusion电力线点云自动化处理系统</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&family=Archivo+Black&display=swap" rel="stylesheet">
+    <style>
+        /* 全局样式 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Open Sans', sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #0f1a30, #1d2c4d);
+            color: #e0f7fa;
+            overflow: hidden;
+            height: 100vh;
+        }
+        
+        /* 头部样式 */
+        .header {
+            background: rgba(0, 20, 40, 0.85);
+            backdrop-filter: blur(10px);
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(0, 150, 255, 0.3);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            z-index: 100;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .logo-icon {
+            font-size: 28px;
+            color: #4fc3f7;
+        }
+        
+        .logo-text {
+            font-family: 'Archivo Black', sans-serif;
+            font-size: 24px;
+            font-weight: 700;
+            background: linear-gradient(90deg, #4fc3f7, #29b6f6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .header-info {
+            font-size: 16px;
+            color: #90caf9;
+        }
+        
+        /* 主内容区 */
+        .main-container {
+            display: flex;
+            height: calc(100vh - 70px);
+        }
+        
+        /* 左侧工具栏 */
+        .tool-panel {
+            width: 320px;
+            background: rgba(0, 30, 60, 0.85);
+            backdrop-filter: blur(10px);
+            border-right: 1px solid rgba(100, 180, 255, 0.3);
+            padding: 20px;
+            overflow-y: auto;
+            z-index: 50;
+            box-shadow: 5px 0 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .section {
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(100, 180, 255, 0.2);
+        }
+        
+        .section:last-child {
+            border-bottom: none;
+        }
+        
+        .section-header {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .section-icon {
+            color: #4fc3f7;
+            font-size: 20px;
+            background: rgba(79, 195, 247, 0.1);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .section-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #4fc3f7;
+        }
+        
+        .section-subtitle {
+            font-size: 14px;
+            color: #90caf9;
+            margin-bottom: 15px;
+            line-height: 1.5;
+        }
+        
+        .control-group {
+            margin-bottom: 15px;
+        }
+        
+        .control-label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #90caf9;
+        }
+        
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .btn {
+            padding: 10px 15px;
+            background: rgba(0, 80, 160, 0.7);
+            border: none;
+            border-radius: 5px;
+            color: #e0f7fa;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        .btn:hover {
+            background: rgba(41, 182, 246, 0.9);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+        }
+        
+        .btn.active {
+            background: rgba(41, 182, 246, 0.9);
+            box-shadow: 0 0 10px rgba(79, 195, 247, 0.5);
+        }
+        
+        .btn i {
+            font-size: 16px;
+        }
+        
+        /* 下拉菜单 */
+        .btn-group.dropdown {
+            position: relative;
+        }
+        
+        .dropdown-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+        }
+        
+        .dropdown-menu {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            width: 100%;
+            background: rgba(0, 40, 80, 0.95);
+            border-radius: 5px;
+            padding: 10px 0;
+            z-index: 100;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
+            display: none;
+        }
+        
+        .dropdown-menu.show {
+            display: block;
+        }
+        
+        .dropdown-item {
+            padding: 8px 15px;
+            color: #e0f7fa;
+            text-decoration: none;
+            display: block;
+            transition: background 0.2s;
+        }
+        
+        .dropdown-item:hover {
+            background: rgba(79, 195, 247, 0.3);
+        }
+        
+        /* 滑块 */
+        .slider {
+            width: 100%;
+            height: 8px;
+            background: rgba(100, 180, 255, 0.2);
+            border-radius: 4px;
+            outline: none;
+            -webkit-appearance: none;
+        }
+        
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #4fc3f7;
+            cursor: pointer;
+            box-shadow: 0 0 8px rgba(79, 195, 247, 0.8);
+        }
+        
+        /* 可视化区域 */
+        .visualization-area {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            background: rgba(0, 10, 20, 0.7);
+        }
+        
+        #container {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        
+        /* 信息面板 */
+        .info-panel {
+            position: absolute;
+            top: 85px;
+            right: 20px;
+            width: 320px;
+            background: rgba(0, 30, 60, 0.85);
+            border-radius: 10px;
+            padding: 20px;
+            z-index: 50;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(100, 180, 255, 0.3);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+        }
+        
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(100, 180, 255, 0.2);
+        }
+        
+        .panel-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #4fc3f7;
+        }
+        
+        .close-btn {
+            background: none;
+            border: none;
+            color: #ff6b6b;
+            font-size: 20px;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+        
+        .close-btn:hover {
+            transform: rotate(90deg);
+        }
+        
+        .property-grid {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .property-label {
+            font-weight: 600;
+            color: #90caf9;
+            font-size: 14px;
+        }
+        
+        .property-value {
+            color: #e0f7fa;
+            word-break: break-word;
+            font-size: 14px;
+        }
+        
+        /* 状态栏 */
+        .status-bar {
+            position: absolute;
+            bottom: 10px;
+            left: 20px;
+            background: rgba(0, 20, 40, 0.85);
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            color: #90caf9;
+            z-index: 50;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(100, 180, 255, 0.2);
+        }
+        
+        .coords {
+            display: flex;
+            gap: 15px;
+        }
+        
+        /* 视图控制栏 */
+        .view-controls {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
+            background: rgba(0, 20, 40, 0.85);
+            padding: 12px 20px;
+            border-radius: 30px;
+            backdrop-filter: blur(10px);
+            z-index: 50;
+            border: 1px solid rgba(0, 150, 255, 0.3);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+        }
+        
+        .view-btn {
+            padding: 10px 20px;
+            background: rgba(0, 80, 160, 0.7);
+            border: none;
+            border-radius: 20px;
+            color: #e0f7fa;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .view-btn:hover {
+            background: rgba(41, 182, 246, 0.9);
+            transform: translateY(-2px);
+        }
+        
+        .view-btn.active {
+            background: rgba(41, 182, 246, 0.9);
+            box-shadow: 0 0 10px rgba(79, 195, 247, 0.5);
+        }
+        
+        /* 加载界面 */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 15, 30, 0.95);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 200;
+            transition: opacity 0.5s ease;
+        }
+        
+        .loader {
+            width: 60px;
+            height: 60px;
+            border: 5px solid rgba(79, 195, 247, 0.2);
+            border-top: 5px solid #4fc3f7;
+            border-radius: 50%;
+            animation: spin 1.5s linear infinite;
+            margin-bottom: 30px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .loading-text {
+            font-size: 32px;
+            color: #e0f7fa;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #4fc3f7, #29b6f6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .loading-details {
+            color: #90caf9;
+            font-size: 18px;
+            text-align: center;
+            max-width: 80%;
+        }
+        
+        /* 色板样式 */
+        .color-swatches {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            margin-top: 10px;
+        }
+        
+        .color-swatch {
+            height: 30px;
+            border-radius: 4px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.2s;
+        }
+        
+        .color-swatch:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 8px rgba(79, 195, 247, 0.8);
+        }
+        
+        .color-swatch.active {
+            border: 2px solid #fff;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+        }
+        
+        /* 表格样式 */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            background: rgba(0, 40, 80, 0.3);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .data-table th, .data-table td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid rgba(100, 180, 255, 0.2);
+        }
+        
+        .data-table th {
+            background: rgba(0, 60, 120, 0.5);
+            color: #4fc3f7;
+            font-weight: 600;
+        }
+        
+        .data-table tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .data-table tr:hover {
+            background: rgba(79, 195, 247, 0.1);
+        }
+    </style>
+</head>
+<body data-custom-load="true" data-name="plasio_laszip"
+      data-tools="" data-configs="" data-path="">
+    
+    <!-- 加载界面 -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loader"></div>
+        <div class="loading-text">LineFusion 电力线点云处理系统</div>
+        <div class="loading-details">正在加载电力线数据与三维场景...</div>
+    </div>
+    
+    <!-- 头部区域 -->
+    <div class="header">
+        <div class="logo">
+            <div class="logo-icon">⚡</div>
+            <div class="logo-text">LineFusion</div>
+        </div>
+        <div class="header-info">
+            当前模式: <span id="currentMode">上帝视角</span>
+        </div>
+    </div>
+    
+    <!-- 主内容区 -->
+    <div class="main-container">
+        <!-- 左侧工具栏 -->
+        <div class="tool-panel">
+            <!-- 文件管理 -->
+            <div class="section">
+                <div class="section-header">
+                    <div class="section-icon">
+                        <i class="fas fa-folder-open"></i>
+                    </div>
+                    <h3 class="section-title">文件管理</h3>
+                </div>
+                <p class="section-subtitle">导入和管理点云数据文件</p>
+                
+                <div class="control-group">
+                    <label class="control-label">点云密度</label>
+                    <input type="range" min="1" max="100" value="75" class="slider" id="densitySlider">
+                </div>
+                
+                <div class="btn-group">
+                    <button class="btn">
+                        <i class="fas fa-file-import"></i> 导入数据
+                    </button>
+                    <button class="btn">
+                        <i class="fas fa-save"></i> 保存项目
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 相机控制 -->
+            <div class="section">
+                <div class="section-header">
+                    <div class="section-icon">
+                        <i class="fas fa-camera"></i>
+                    </div>
+                    <h3 class="section-title">相机控制</h3>
+                </div>
+                <p class="section-subtitle">调整视图和相机参数</p>
+                
+                <div class="btn-group">
+                    <button class="btn active">
+                        <i class="fas fa-cube"></i> 透视
+                    </button>
+                    <button class="btn">
+                        <i class="fas fa-globe-asia"></i> 上帝视角
+                    </button>
+                </div>
+                
+                <div class="btn-group">
+                    <button class="btn">
+                        <i class="fas fa-plane"></i> 飞行视角
+                    </button>
+                    <button class="btn">
+                        <i class="fas fa-sync"></i> 重置视图
+                    </button>
+                </div>
+                
+                <div class="control-group">
+                    <label class="control-label">视场角 (FOV)</label>
+                    <input type="range" min="30" max="120" value="60" class="slider" id="fovSlider">
+                </div>
+            </div>
+            
+            <!-- 数据显示 -->
+            <div class="section">
+                <div class="section-header">
+                    <div class="section-icon">
+                        <i class="fas fa-chart-bar"></i>
+                    </div>
+                    <h3 class="section-title">数据显示</h3>
+                </div>
+                <p class="section-subtitle">调整点云渲染参数</p>
+                
+                <div class="control-group">
+                    <label class="control-label">点大小</label>
+                    <input type="range" min="1" max="10" value="3" class="slider" id="pointSizeSlider">
+                </div>
+                
+                <div class="control-group">
+                    <label class="control-label">Z轴放大</label>
+                    <input type="range" min="1" max="10" value="2" class="slider" id="zScaleSlider">
+                </div>
+                
+                <div class="control-group">
+                    <label class="control-label">着色模式</label>
+                    <div class="btn-group dropdown">
+                        <button class="btn dropdown-toggle">
+                            <span>RGB</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="dropdown-menu">
+                            <a href="#" class="dropdown-item">RGB</a>
+                            <a href="#" class="dropdown-item">分类</a>
+                            <a href="#" class="dropdown-item">高度图颜色</a>
+                            <a href="#" class="dropdown-item">高度图颜色反转</a>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <label class="control-label">颜色映射</label>
+                    <div class="color-swatches">
+                        <div class="color-swatch active" style="background: linear-gradient(to right, #0000ff, #ff0000);"></div>
+                        <div class="color-swatch" style="background: linear-gradient(to right, #0000ff, #00ff00);"></div>
+                        <div class="color-swatch" style="background: linear-gradient(to right, #0000ff, #ffa500);"></div>
+                        <div class="color-swatch" style="background: linear-gradient(to right, #ff0000, #ffff00);"></div>
+                        <div class="color-swatch" style="background: linear-gradient(to right, #00ff00, #00ffff);"></div>
+                        <div class="color-swatch" style="background: linear-gradient(to right, #000000, #ffa500);"></div>
+                        <div class="color-swatch" style="background: linear-gradient(to right, #ff00ff, #00ffff);"></div>
+                        <div class="color-swatch" style="background: linear-gradient(to right, #ff7f50, #6a5acd);"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 工具 -->
+            <div class="section">
+                <div class="section-header">
+                    <div class="section-icon">
+                        <i class="fas fa-tools"></i>
+                    </div>
+                    <h3 class="section-title">工具</h3>
+                </div>
+                <p class="section-subtitle">点云测量和分析工具</p>
+                
+                <div class="btn-group">
+                    <button class="btn active">
+                        <i class="fas fa-mouse-pointer"></i> 选择
+                    </button>
+                    <button class="btn">
+                        <i class="fas fa-ruler"></i> 测量
+                    </button>
+                    <button class="btn">
+                        <i class="fas fa-map-marker-alt"></i> 标记
+                    </button>
+                </div>
+                
+                <div class="control-group">
+                    <label class="control-label">淹没分析</label>
+                    <input type="range" min="0" max="100" value="0" class="slider" id="floodSlider">
+                </div>
+                
+                <div class="btn-group">
+                    <button class="btn">
+                        <i class="fas fa-calculator"></i> 分析距离
+                    </button>
+                    <button class="btn">
+                        <i class="fas fa-exclamation-triangle"></i> 检测隐患
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 测量数据 -->
+            <div class="section">
+                <div class="section-header">
+                    <div class="section-icon">
+                        <i class="fas fa-ruler-combined"></i>
+                    </div>
+                    <h3 class="section-title">测量数据</h3>
+                </div>
+                <p class="section-subtitle">当前在视区内的测量段</p>
+                
+                <div class="btn-group">
+                    <button class="btn">
+                        <i class="fas fa-redo"></i> 重置测量
+                    </button>
+                </div>
+                
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>名称</th>
+                            <th>距离</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>电力线A-B</td>
+                            <td>125.6m</td>
+                        </tr>
+                        <tr>
+                            <td>塔间距</td>
+                            <td>85.3m</td>
+                        </tr>
+                        <tr>
+                            <td>对地高度</td>
+                            <td>32.4m</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- 可视化区域 -->
+        <div class="visualization-area">
+            <div id="container"></div>
+            
+            <!-- 信息面板 -->
+            <div class="info-panel">
+                <div class="panel-header">
+                    <div class="panel-title">电力线属性</div>
+                    <button class="close-btn" id="closeInfoPanel">×</button>
+                </div>
+                <div class="property-grid">
+                    <div class="property-label">线路编号:</div>
+                    <div class="property-value">PL-220KV-045</div>
+                    
+                    <div class="property-label">电压等级:</div>
+                    <div class="property-value">220 KV</div>
+                    
+                    <div class="property-label">长度:</div>
+                    <div class="property-value">8.65 公里</div>
+                    
+                    <div class="property-label">材质:</div>
+                    <div class="property-value">钢芯铝绞线</div>
+                    
+                    <div class="property-label">建设日期:</div>
+                    <div class="property-value">2022-03-15</div>
+                    
+                    <div class="property-label">状态:</div>
+                    <div class="property-value">运行中</div>
+                    
+                    <div class="property-label">负载率:</div>
+                    <div class="property-value">78.3%</div>
+                    
+                    <div class="property-label">维护单位:</div>
+                    <div class="property-value">华东电网维护三组</div>
+                </div>
+            </div>
+            
+            <!-- 视图控制栏 -->
+            <div class="view-controls">
+                <button class="view-btn active">
+                    <i class="fas fa-globe-asia"></i> 上帝视角
+                </button>
+                <button class="view-btn">
+                    <i class="fas fa-walking"></i> 第一人称
+                </button>
+                <button class="view-btn">
+                    <i class="fas fa-plane"></i> 飞行模式
+                </button>
+            </div>
+            
+            <!-- 状态栏 -->
+            <div class="status-bar">
+                <div class="coords">
+                    <span>经度: 120.1536°</span>
+                    <span>纬度: 30.2875°</span>
+                    <span>海拔: 42.6m</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 模拟加载完成
+        setTimeout(() => {
+            document.getElementById('loadingOverlay').style.opacity = '0';
+            setTimeout(() => {
+                document.getElementById('loadingOverlay').style.display = 'none';
+            }, 500);
+        }, 2000);
+        
+        // 添加下拉菜单功能
+        document.querySelectorAll('.dropdown-toggle').forEach(toggle => {
+            toggle.addEventListener('click', function() {
+                const menu = this.nextElementSibling;
+                menu.classList.toggle('show');
+            });
+        });
+        
+        // 关闭下拉菜单当点击外部
+        document.addEventListener('click', function(e) {
+            if (!e.target.matches('.dropdown-toggle')) {
+                document.querySelectorAll('.dropdown-menu').forEach(menu => {
+                    menu.classList.remove('show');
+                });
+            }
+        });
+        
+        // 颜色选择器
+        document.querySelectorAll('.color-swatch').forEach(swatch => {
+            swatch.addEventListener('click', function() {
+                document.querySelectorAll('.color-swatch').forEach(s => {
+                    s.classList.remove('active');
+                });
+                this.classList.add('active');
+            });
+        });
+    </script>
+</body>
+</html>

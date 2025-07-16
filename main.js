@@ -1,10 +1,25 @@
 const { app, BrowserWindow } = require('electron');
 const path = require('path');
-
+app.commandLine.appendSwitch('ignore-gpu-blacklist')         // 忽略 Chromium 的 GPU 黑名单
+app.commandLine.appendSwitch('enable-webgl')                 // 强制启用 WebGL
+app.commandLine.appendSwitch('enable-gpu-rasterization')     // 强制启用 GPU 光栅化
 // 添加日志
 const log = require('electron-log');
 log.transports.file.level = 'info';
 log.info('应用程序启动');
+// const { app, BrowserWindow } = require('electron');
+
+// —— 保证硬件加速没有被全局关闭 ——
+// （这行如果你写过就删掉，或者确认没写）
+// app.disableHardwareAcceleration();
+
+// app.whenReady().then(() => {
+//   // 输出当前 GPU 支持情况
+//   console.log('GPU Feature Status:', app.getGPUFeatureStatus());
+  
+//   createWindow();
+//   // … 其余逻辑
+// });
 
 function createWindow() {
     // 创建浏览器窗口
@@ -15,12 +30,13 @@ function createWindow() {
             nodeIntegration: true,
             contextIsolation: false,
             webSecurity: false, // 允许加载本地资源
-            allowRunningInsecureContent: true // 允许加载混合内容
+            allowRunningInsecureContent: true, // 允许加载混合内容
+            webgl: true  // 确保 WebGL 启用
         }
     });
 
     log.info('创建主窗口');
-
+    
     // 加载构建目录中的 index.html
     mainWindow.loadFile(path.join(__dirname, 'build', 'index.html'));
     
@@ -44,11 +60,10 @@ function createWindow() {
 
 // 当 Electron 完成初始化时创建窗口
 app.whenReady().then(() => {
+    console.log('GPU Feature Status:', app.getGPUFeatureStatus());
     createWindow();
 
     app.on('activate', () => {
-        // 在 macOS 上，当点击 dock 图标并且没有其他窗口打开时，
-        // 通常在应用程序中重新创建一个窗口。
         if (BrowserWindow.getAllWindows().length === 0) {
             createWindow();
         }
