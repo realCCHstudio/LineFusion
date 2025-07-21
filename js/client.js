@@ -40,6 +40,99 @@ function endsWith(str, s) {
 	});
 
 })(window);
+// client.js — 修改/新增部分
+
+(function(w) {
+    "use strict";
+    // …（原有代码）…
+
+    // ---------- 新增：测量模式开关按钮 ----------
+    // 在页面上动态插入一个按钮
+    var measureBtn = $('<button id="toggle-measure" style="position:absolute;top:10px;left:10px;z-index:1000;">测量模式</button>');
+    $('body').append(measureBtn);
+
+    // 测量状态变量
+    var measuring = false;
+    var points = [];  // 用来存两个点击点
+
+    measureBtn.on('click', function() {
+        measuring = !measuring;
+        points = [];
+        $('#measurement-overlay').remove();  // 清除旧标注
+        $(this).text(measuring ? '退出测量' : '测量模式');
+    });
+
+    // ---------- 新增：在渲染容器上监听点击 ----------
+    var $container = $("#container");
+    $container.css('position', 'relative'); // 确保定位参考
+
+    $container.on('click', function(e) {
+        if (!measuring) return;
+
+        // 计算相对于容器左上角的点击位置
+        var offset = $(this).offset();
+        var x = e.pageX - offset.left;
+        var y = e.pageY - offset.top;
+        points.push({ x: x, y: y });
+
+        // 标出点击位置
+        var dot = $('<div class="measure-dot"></div>').css({
+            position: 'absolute',
+            width: '8px', height: '8px',
+            'border-radius': '4px',
+            background: 'red',
+            left: (x - 4) + 'px',
+            top:  (y - 4) + 'px',
+            'z-index': 1001
+        });
+        $container.append(dot);
+
+        if (points.length === 2) {
+            // 两点已选完，进行距离计算
+            calculateAndDisplayDistance(points[0], points[1]);
+            // 重置状态，或让用户手动清除／继续测量
+            measuring = false;
+            measureBtn.text('测量模式');
+            points = [];
+        }
+    });
+
+    // ---------- 新增：距离计算与显示 ----------
+    function calculateAndDisplayDistance(p1, p2) {
+        // 将屏幕坐标转换为三维世界坐标（伪代码，需要结合实际渲染器 API）
+        var world1 = render.screenToWorld(p1.x, p1.y);
+        var world2 = render.screenToWorld(p2.x, p2.y);
+
+        var dx = world1[0] - world2[0];
+        var dy = world1[1] - world2[1];
+        var dz = world1[2] - world2[2];
+        var dist = Math.sqrt(dx*dx + dy*dy + dz*dz);
+
+        // 在容器上绘制连线
+        var svgLine = $(
+            '<svg id="measurement-overlay" style="position:absolute;top:0;left:0;pointer-events:none;z-index:1000;" ' +
+            'width="'+$container.width()+'" height="'+$container.height()+'">'+
+              '<line x1="'+p1.x+'" y1="'+p1.y+'" x2="'+p2.x+'" y2="'+p2.y+'" '+
+                    'stroke="red" stroke-width="2"/>' +
+              '<text x="'+((p1.x+p2.x)/2+5)+'" y="'+((p1.y+p2.y)/2-5)+'" '+
+                    'fill="white" font-size="14px" stroke="black" stroke-width="0.5px">'+
+                dist.toFixed(3) +
+              '</text>' +
+            '</svg>'
+        );
+        $container.append(svgLine);
+    }
+
+    // （注意：需确保 render 对象提供 screenToWorld 方法，或根据你的渲染库自行替换为正确的坐标转换 API）
+
+})(window);
+
+// client.js — 新增 CSS（可放在你的主样式文件中）
+/*
+.measure-dot {
+    box-shadow: 0 0 4px rgba(0,0,0,0.5);
+}
+*/
 
 $(function() {
 	setTimeout(function() {
