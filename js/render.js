@@ -827,40 +827,194 @@ var THREE = require("three"),
 	})();
 
 	// 危险区域点收集器
-	function DangerZonePointCollector() {
-		this.points = [];
+	function DangerZonePointCollector(domElement) {
+		this.points = []; // 存储所有点，不清空
+		this.tempPoints = []; // 临时存储当前正在收集的两个点
+		this.domElement = domElement || window;
 		this.currentRiskLevel = 'low';
+
+		this.fromCamera = null;
+		this.size = [0, 0];
+
+		// 先创建一个默认材质
+		this.mat = new THREE.SpriteMaterial({
+			color: 0xffffff,
+			fog: false
+		});
+
+		var o = this;
+		THREE.ImageUtils.loadTexture("/assets/circle.png", undefined, function(map) {
+			// 材质加载完成后更新
+			o.mat.map = map;
+			o.mat.needsUpdate = true;
+		});
+
+		this._sprites = [];
+		this.orthoScene = new THREE.Scene();
+		this.orthoCamera = new THREE.OrthographicCamera(-1, 1.0, 1.0, -1.0, 1, 10);
+		this.orthoCamera.position.z = 10;
 	}
 
+	DangerZonePointCollector.prototype._2dProj = function(p, proj) {
+		proj = proj || (new THREE.Projector());
+		var ndc = p.clone();
+		proj.projectVector(ndc, this.fromCamera);
+
+		var screen = new THREE.Vector2(this.size[0] * (ndc.x + 1) / 2, this.size[1] - this.size[1] * (ndc.y + 1) / 2);
+		var ortho = new THREE.Vector3(ndc.x * this.size[0] / 2, ndc.y * this.size[1] / 2, 1.0);
+
+		return [screen, ortho];
+	};
+
 	DangerZonePointCollector.prototype.push = function(x, y, point, startNew, riskLevel) {
-		if (point.x === 0.0 && point.y === 0.0 && point.z === 0.0)
-			return;
+		var newPos = new THREE.Vector2(x, y);
 		
+		// 检查是否点击在现有点上（移除功能）
+		for (var i = 0; i < this.points.length ; i ++) {
+			if (newPos.distanceTo(this.points[i].screenPos) < 16.0) {
+				var thisPoint = this.points[i];
+				this.orthoScene.remove(this.points[i].sprite);
+				this.points.splice(i, 1);
+				needRefresh = true;
+				return;
+			}
+		}
+
+		if (point.x === 0.0 && point.y === 0.0 && point.z === 0.0)
+			return; // 没有点击到点云
+
 		this.currentRiskLevel = riskLevel || 'low';
 		
-		// 为危险区域点添加特殊标识
+		// 设置点的ID
+		if (this.points.length === 0)
+			point.id = 1;
+		else if (startNew) {
+			point.id = this.points[this.points.length - 1].id + 1;
+		}
+		else {
+			point.id = this.points[this.points.length - 1].id;
+		}
+
+		// 设置危险区域特有属性
+		point.sprite = null;
+		point.screenPos = newPos;
 		point.isDangerZone = true;
 		point.riskLevel = this.currentRiskLevel;
 		
+		// 根据风险等级设置颜色
+		point.color = new THREE.Color();
+		switch(this.currentRiskLevel) {
+			case 'low':
+				point.color.setHex(0x28a745); // 绿色
+				break;
+			case 'medium':
+				point.color.setHex(0xffc107); // 黄色
+				break;
+			case 'high':
+				point.color.setHex(0xdc3545); // 红色
+				break;
+			default:
+				point.color.setHex(0x28a745);
+		}
+
+		// 添加到总点集合（永久保存，不清空）
 		this.points.push(point);
 		
+		// 添加到临时点集合用于创建危险区域
+		this.tempPoints.push(point);
+
 		// 每两个点创建一个危险区域
-		if (this.points.length >= 2) {
-			var p1 = this.points[this.points.length - 2];
-			var p2 = this.points[this.points.length - 1];
+		if (this.tempPoints.length >= 2) {
+			var p1 = this.tempPoints[0];
+			var p2 = this.tempPoints[1];
 			
 			// 创建危险区域
 			getDangerZoneController().add(p1, p2);
 			
-			// 清空点集合，准备下一个危险区域
-			this.points = [];
+			// 只清空临时点集合，保持总点集合不变
+			this.tempPoints = [];
 		}
-		
+
 		needRefresh = true;
 	};
 
-	DangerZonePointCollector.prototype.reset = function() {
+	DangerZonePointCollector.prototype._updateSpritePositions = function() {
+		var width = this.size[0];
+		var height = this.size[1];
+
+		var proj = new THREE.Projector();
+
+		this.fromCamera.updateMatrix();
+		this.fromCamera.updateMatrixWorld();
+		this.fromCamera.matrixWorldInverse.getInverse( this.fromCamera.matrixWorld );
+
+		var frustum = new THREE.Frustum();
+		frustum.setFromMatrix( new THREE.Matrix4().multiplyMatrices(this.fromCamera.projectionMatrix,
+																	this.fromCamera.matrixWorldInverse ) );
+
+		for (var i = 0, il = this.points.length ; i < il ; i ++) {
+			var p = this.points[i];
+
+			if (!p.sprite) {
+				// 创建带颜色的精灵，就像测量点一样
+				var spriteMaterial = new THREE.SpriteMaterial({
+							map: this.mat.map,
+							color: p.color,
+							fog: false
+						});
+				p.sprite = new THREE.Sprite(spriteMaterial);
+				p.sprite.scale.set(16, 16, 1);
+				this.orthoScene.add(p.sprite);
+			}
+
+			var ps = this._2dProj(p, proj);
+			var ndc = ps[1];
+			p.sprite.position.set(ndc.x, ndc.y, ndc.z);
+			p.screenPos = ps[0];
+
+			p.sprite.visible = frustum.containsPoint(p);
+		}
+	};
+
+	DangerZonePointCollector.prototype.update = function() {
+		var $e = $(this.domElement);
+		var width = $e.width(),
+			height = $e.height();
+
+		var ac = getCameraControl().activeCamera;
+
+		if (this.fromCamera != ac ||
+			width !== this.size[0] || height !== this.size[1]) {
+			this.size = [width, height];
+			this.fromCamera = ac;
+
+			this.orthoCamera.left = -width / 2;
+			this.orthoCamera.right = width / 2;
+			this.orthoCamera.top = height / 2;
+			this.orthoCamera.bottom = -height / 2;
+
+			this.orthoCamera.updateProjectionMatrix();
+			this._updateSpritePositions();
+
+			needRefresh = true;
+		}
+	};
+
+	DangerZonePointCollector.prototype.render = function(renderer, target, forceClear) {
+		this._updateSpritePositions();
+		renderer.render(this.orthoScene, this.orthoCamera, target, forceClear);
+	};
+
+	DangerZonePointCollector.prototype.clearPoints = function() {
+		for (var i = 0 ; i < this.points.length ; i ++) {
+			this.orthoScene.remove(this.points[i].sprite);
+		}
 		this.points = [];
+	};
+
+	DangerZonePointCollector.prototype.reset = function() {
+		this.clearPoints();
+		this.tempPoints = []; // 同时清空临时点集合
 		needRefresh = true;
 	};
 
@@ -868,8 +1022,8 @@ var THREE = require("three"),
 		var dzpc = null;
 
 		return function() {
-			if (dzpc === null)
-				dzpc = new DangerZonePointCollector();
+			if (dzpc === null && renderer && renderer.domElement)
+				dzpc = new DangerZonePointCollector(renderer.domElement);
 			return dzpc;
 		};
 	})();
@@ -1415,14 +1569,8 @@ var THREE = require("three"),
 		});
 
 		$(document).on('plasio.mensuration.addPoint', function(d) {
-			// Don't allow addition of mensuration points if we're in toggle mode and
-			// have some active region (we're seeing clipped area)
-			if (toggleActivate && _.some(getRegionsController().regions, 'active'))
-				return;
-
 			var point = getXYZRenderer().pick(renderer, scene, getCameraControl().activeCamera, d.x, d.y);
 			
-			// 如果是危险区域模式，使用特殊的处理逻辑
 			if (d.isDangerZone) {
 				getDangerZonePointCollector().push(d.x, d.y, point, d.startNew, d.riskLevel);
 			} else {
@@ -1519,6 +1667,9 @@ var THREE = require("three"),
 
 		$(document).on('plasio.dangerzone.reset', function() {
 			getDangerZoneController().reset();
+			if (getDangerZonePointCollector()) {
+				getDangerZonePointCollector().reset();
+			}
 		});
 
 		$(document).on('plasio.dangerzone.remove', function(e) {
@@ -1550,6 +1701,9 @@ var THREE = require("three"),
 
 		getCameraControl().update();
 		getPointCollector().update();
+		if (getDangerZonePointCollector()) {
+			getDangerZonePointCollector().update();
+		}
 
 		if (needRefresh) {
 			render();
@@ -1621,6 +1775,7 @@ var THREE = require("three"),
 			// render collector lines
 			renderCollectorLines(renderer, camera, target);
 			getPointCollector().render(renderer, target);
+			getDangerZonePointCollector().render(renderer, target);
 		};
 
 		if (needOverlay && toggleActivate) {
