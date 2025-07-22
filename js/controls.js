@@ -712,31 +712,25 @@ var withRefresh = require('./util').withRefresh;
             render.getDangerZoneController().toggle(i);
         }),
     
+        // 在DangerZoneControls的render方法中，替换dangerZonesList的实现
         render: function() {
             var o = this;
             var buttonClass = this.state.isActive ? 'btn btn-danger btn-sm btn-block active' : 'btn btn-default btn-sm btn-block';
             
-            var riskColors = {
-                'low': '#28a745',    // 低风险颜色
-                'medium': '#ffc107', // 中风险颜色
-                'high': '#dc3545'    // 高风险颜色
-            };
-            
+            // 使用DangerZoneItem组件替换简单的列表项
             var dangerZonesList = this.state.regions.map(function(region, index) {
                 return (
-                    <div key={index} className="danger-zone-item" style={{marginBottom: '5px', padding: '5px', border: '1px solid #ddd', borderRadius: '3px'}}>
-                        <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
-                            <span style={{color: riskColors[region.riskLevel], fontWeight: 'bold'}}>
-                                {region.riskLevel === 'low' ? '低风险' : region.riskLevel === 'medium' ? '中风险' : '高风险'} 危险区域 {index + 1}
-                            </span>
-                            <button 
-                                className="btn btn-xs btn-danger"
-                                onClick={function() { o.removeDangerZone(index); }}
-                                title="删除危险区域">
-                                删除危险区域
-                            </button>
-                        </div>
-                    </div>
+                    <DangerZoneItem
+                        key={index}
+                        index={index}
+                        dangerZone={region}
+                        remove={o.removeDangerZone}
+                        setRibbon={o.setRibbon}
+                        setAxisAligned={o.setAxisAligned}
+                        setWidth={o.setWidth}
+                        setHeight={o.setHeight}
+                        toggle={o.toggle}
+                    />
                 );
             });
             
