@@ -212,7 +212,7 @@ var withRefresh = require('./util').withRefresh;
                 <button
                     className={classes}
                     onClick={this.props.toggle}>
-                    {this.props.region.active ? "Deactivate" : "Activate"}
+                    {this.props.region.active ? "禁用" : "启用"}
                 </button>
             );
         }
@@ -220,7 +220,8 @@ var withRefresh = require('./util').withRefresh;
 
     var RegionSizeSlider = React.createClass({
         componentDidMount: function() {
-            var a = this.getDOMNode();
+            // 使用 this.refs.sliderNode 来安全地获取DOM元素
+            var a = this.refs.sliderNode;
             $(a).noUiSlider({
                 range: [1, 10],
                 start: Math.round(this.props.startScale),
@@ -231,12 +232,14 @@ var withRefresh = require('./util').withRefresh;
             });
         },
         render: function() {
+            // 在 render 方法中，通过 ref 属性为DOM元素添加一个引用
             return (
-                <div style={{ marginBottom: '15px' }} />
+                <div style={{ marginBottom: '15px' }} ref="sliderNode" />
             );
         },
         setSize: function() {
-            var v = $(this.getDOMNode()).val();
+            // 同样，在这里也使用 this.refs.sliderNode
+            var v = $(this.refs.sliderNode).val();
             this.props.setSize(v);
         }
     });
@@ -289,11 +292,11 @@ var withRefresh = require('./util').withRefresh;
                             <div
                                 className={classesFor(this.props.region.type === 1)}
                                 onClick={_.partial(this.props.setRibbon, this.props.index)}
-                                type="button">Ribbon</div>
+                                type="button">条带</div>
                             <div
                                 className={classesFor(this.props.region.type === 2)}
                                 onClick={_.partial(this.props.setAxisAligned, this.props.index)}
-                                type="button">Axis-Aligned</div>
+                                type="button">轴对齐</div>
                         </div>
                         {regionControls}
                         <RegionViewport
@@ -322,31 +325,72 @@ var withRefresh = require('./util').withRefresh;
 
         },
 
+        // render: function() {
+        //     if (this.state.regions.length === 0)
+        //         return (
+        //             <div className="its-empty">No regions defined</div>
+        //         );
+        //
+        //         var toggleClip = withRefresh(function() {
+        //             $.event.trigger({
+        //                 type: 'plasio.render.toggleClip'
+        //             });
+        //         });
+        //
+        //         var o = this;
+        //         var regions = _.times(this.state.regions.length, function(i) {
+        //             var r = o.state.regions[i];
+        //             return Region({
+        //                 index: i,
+        //                 region: o.state.regions[i],
+        //                 setRibbon: o.setRibbon,
+        //                 setAxisAligned: o.setAxisAligned,
+        //                 setWidth: o.setWidth,
+        //                 setHeight: o.setHeight,
+        //                 remove: o.remove,
+        //                 toggle: o.toggle });
+        //         });
+        //
+        //     return (
+        //         <div>
+        //             <button
+        //                 className='btn btn-info btn-sm btn-block'
+        //                 style={{marginBottom: '10px'}}
+        //                 onClick={toggleClip}>
+        //                 Toggle Regions View (T)
+        //             </button>
+        //             {regions}
+        //         </div>
+        //     );
+        // },
         render: function() {
             if (this.state.regions.length === 0)
                 return (
                     <div className="its-empty">No regions defined</div>
                 );
 
-                var toggleClip = withRefresh(function() {
-                    $.event.trigger({
-                        type: 'plasio.render.toggleClip'
-                    });
+            var toggleClip = withRefresh(function() {
+                $.event.trigger({
+                    type: 'plasio.render.toggleClip'
                 });
+            });
 
-                var o = this;
-                var regions = _.times(this.state.regions.length, function(i) {
-                    var r = o.state.regions[i];
-                    return Region({
-                        index: i,
-                        region: o.state.regions[i],
-                        setRibbon: o.setRibbon,
-                        setAxisAligned: o.setAxisAligned,
-                        setWidth: o.setWidth,
-                        setHeight: o.setHeight,
-                        remove: o.remove,
-                        toggle: o.toggle });
+            var o = this;
+            var regions = _.times(this.state.regions.length, function(i) {
+                var r = o.state.regions[i];
+                // 修正：使用 React.createElement 来创建每一个区域控制面板
+                return React.createElement(Region, {
+                    key: i, // 添加 key 属性，这是React推荐的做法
+                    index: i,
+                    region: o.state.regions[i],
+                    setRibbon: o.setRibbon,
+                    setAxisAligned: o.setAxisAligned,
+                    setWidth: o.setWidth,
+                    setHeight: o.setHeight,
+                    remove: o.remove,
+                    toggle: o.toggle
                 });
+            });
 
             return (
                 <div>
@@ -354,7 +398,7 @@ var withRefresh = require('./util').withRefresh;
                         className='btn btn-info btn-sm btn-block'
                         style={{marginBottom: '10px'}}
                         onClick={toggleClip}>
-                        Toggle Regions View (T)
+                        切换区域视图 (T)
                     </button>
                     {regions}
                 </div>
