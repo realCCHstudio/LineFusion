@@ -712,7 +712,7 @@ var withRefresh = require('./util').withRefresh;
             render.getDangerZoneController().toggle(i);
         }),
     
-        // 在DangerZoneControls的render方法中，替换dangerZonesList的实现
+        // 在DangerZoneControls的render方法中
         render: function() {
             var o = this;
             var buttonClass = this.state.isActive ? 'btn btn-danger btn-sm btn-block active' : 'btn btn-default btn-sm btn-block';
@@ -729,7 +729,6 @@ var withRefresh = require('./util').withRefresh;
                         setAxisAligned={o.setAxisAligned}
                         setWidth={o.setWidth}
                         setHeight={o.setHeight}
-                        toggle={o.toggle}
                     />
                 );
             });
@@ -926,15 +925,7 @@ var DangerZoneItem = React.createClass({
             </div>
         ) : null;
         
-        // 只有在展开状态时才显示启用/禁用按钮
-        var toggleButton = this.state.isExpanded ? (
-            <button
-                className={this.props.dangerZone.active ? 'btn btn-success btn-sm btn-block' : 'btn btn-default btn-sm btn-block'}
-                onClick={_.partial(this.props.toggle, this.props.index)}
-                style={{marginTop: '10px'}}>
-                {this.props.dangerZone.active ? "禁用" : "启用"}
-            </button>
-        ) : null;
+        // 删除了禁用按钮部分
         
         return (
             <div style={{
@@ -988,7 +979,6 @@ var DangerZoneItem = React.createClass({
                 {/* 展开时显示的控制选项 */}
                 {typeControls}
                 {dangerZoneControls}
-                {toggleButton}
             </div>
         );
     }
