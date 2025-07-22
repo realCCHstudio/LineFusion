@@ -860,6 +860,16 @@ var DangerZoneSizeSlider = React.createClass({
 
 // 单个危险区域控制组件
 var DangerZoneItem = React.createClass({
+    getInitialState: function() {
+        return {
+            isExpanded: false  // 默认折叠状态
+        };
+    },
+    
+    toggleExpanded: function() {
+        this.setState({ isExpanded: !this.state.isExpanded });
+    },
+    
     render: function() {
         var cx = classNames;
         var classesFor = function(active) {
@@ -883,9 +893,9 @@ var DangerZoneItem = React.createClass({
             'high': '高风险'
         };
         
-        // 只有条带类型才显示大小调整滑块
-        var dangerZoneControls = this.props.dangerZone.type === 1 ? (
-            <div>
+        // 只有在展开状态且为条带类型时才显示大小调整滑块
+        var dangerZoneControls = this.state.isExpanded && this.props.dangerZone.type === 1 ? (
+            <div style={{marginTop: '10px', paddingTop: '10px', borderTop: '1px solid #eee'}}>
                 <div style={{marginBottom: '5px', fontSize: '12px', color: '#666'}}>宽度调整</div>
                 <DangerZoneSizeSlider
                     dangerZone={this.props.dangerZone}
@@ -897,31 +907,13 @@ var DangerZoneItem = React.createClass({
                     startScale={this.props.dangerZone.heightScale}
                     setSize={_.partial(this.props.setHeight, this.props.index)} />
             </div>
-        ) : <div />;
+        ) : null;
         
-        return (
-            <div style={{
-                borderLeft: '10px solid ' + riskColors[this.props.dangerZone.riskLevel],
-                marginBottom: '5px',
-                paddingLeft: '5px',
-                boxSizing: 'border-box'
-            }}>
-                <div
-                    className="btn btn-link btn-sm"
-                    onClick={_.partial(this.props.remove, this.props.index)}
-                    type="button"
-                    style={{
-                        float: 'right',
-                        padding: '0px'
-                    }}>
-                    <span className="glyphicon glyphicon-remove" />
-                </div>
-                <div style={{marginBottom: '5px', fontWeight: 'bold'}}>
-                    {riskLabels[this.props.dangerZone.riskLevel]} 危险区域 {this.props.index + 1}
-                </div>
-                <div
-                    className="btn-group btn-group-justified"
-                    style={{marginBottom: '10px'}}>
+        // 只有在展开状态时才显示类型切换按钮
+        var typeControls = this.state.isExpanded ? (
+            <div style={{marginTop: '10px'}}>
+                <div style={{marginBottom: '5px', fontSize: '12px', color: '#666'}}>类型选择</div>
+                <div className="btn-group btn-group-justified" style={{marginBottom: '10px'}}>
                     <div
                         className={classesFor(this.props.dangerZone.type === 1)}
                         onClick={_.partial(this.props.setRibbon, this.props.index)}
@@ -931,12 +923,72 @@ var DangerZoneItem = React.createClass({
                         onClick={_.partial(this.props.setAxisAligned, this.props.index)}
                         type="button">轴对齐</div>
                 </div>
+            </div>
+        ) : null;
+        
+        // 只有在展开状态时才显示启用/禁用按钮
+        var toggleButton = this.state.isExpanded ? (
+            <button
+                className={this.props.dangerZone.active ? 'btn btn-success btn-sm btn-block' : 'btn btn-default btn-sm btn-block'}
+                onClick={_.partial(this.props.toggle, this.props.index)}
+                style={{marginTop: '10px'}}>
+                {this.props.dangerZone.active ? "禁用" : "启用"}
+            </button>
+        ) : null;
+        
+        return (
+            <div style={{
+                borderLeft: '10px solid ' + riskColors[this.props.dangerZone.riskLevel],
+                marginBottom: '5px',
+                paddingLeft: '10px',
+                paddingRight: '10px',
+                paddingTop: '8px',
+                paddingBottom: '8px',
+                backgroundColor: this.state.isExpanded ? '#f8f9fa' : 'transparent',
+                border: this.state.isExpanded ? '1px solid #dee2e6' : 'none',
+                borderRadius: '4px',
+                boxSizing: 'border-box',
+                cursor: 'pointer'
+            }}>
+                {/* 可点击的标题区域 */}
+                <div 
+                    onClick={this.toggleExpanded}
+                    style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center'
+                    }}>
+                    <div style={{fontWeight: 'bold', fontSize: '14px'}}>
+                        {riskLabels[this.props.dangerZone.riskLevel]} 危险区域 {this.props.index + 1}
+                        <span style={{marginLeft: '8px', fontSize: '12px', color: '#666'}}>
+                            ({this.props.dangerZone.type === 1 ? '条带' : '轴对齐'})
+                        </span>
+                    </div>
+                    <div style={{display: 'flex', alignItems: 'center'}}>
+                        {/* 展开/折叠图标 */}
+                        <span 
+                            className={this.state.isExpanded ? 'glyphicon glyphicon-chevron-up' : 'glyphicon glyphicon-chevron-down'}
+                            style={{marginRight: '10px', fontSize: '12px', color: '#666'}} />
+                        {/* 删除按钮 */}
+                        <span 
+                            className="glyphicon glyphicon-remove"
+                            onClick={function(e) {
+                                e.stopPropagation(); // 阻止事件冒泡
+                                this.props.remove(this.props.index);
+                            }.bind(this)}
+                            style={{
+                                fontSize: '12px',
+                                color: '#dc3545',
+                                cursor: 'pointer',
+                                padding: '2px'
+                            }} />
+                    </div>
+                </div>
+                
+                {/* 展开时显示的控制选项 */}
+                {typeControls}
                 {dangerZoneControls}
-                <button
-                    className={this.props.dangerZone.active ? 'btn btn-success btn-sm btn-block' : 'btn btn-default btn-sm btn-block'}
-                    onClick={_.partial(this.props.toggle, this.props.index)}>
-                    {this.props.dangerZone.active ? "禁用" : "启用"}
-                </button>
+                {toggleButton}
             </div>
         );
     }
