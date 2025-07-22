@@ -625,4 +625,183 @@ var withRefresh = require('./util').withRefresh;
     scope.RegionsBox = RegionsBox;
     scope.openGreyhoundPipelineButton = openGreyhoundPipelineButton;
 
+    // Σ�������ע�������
+    var DangerZoneControls = React.createClass({
+        getInitialState: function() {
+            return {
+                isActive: false,
+                riskLevel: 'low', // 'low', 'medium', 'high'
+                regions: []
+            };
+        },
+    
+        componentWillMount: function() {
+            var o = this;
+            $(document).on("plasio.dangerzone.new", function(e) {
+                o.setState({ regions: o.state.regions.concat(e.region) });
+            });
+    
+            $(document).on("plasio.dangerzone.reset", function() {
+                o.setState({ regions: [] });
+            });
+        },
+    
+        toggleDangerMode: function() {
+            var newState = !this.state.isActive;
+            this.setState({ isActive: newState });
+            
+            // ����Σ�ձ��ģʽ�л��¼�
+            $.event.trigger({
+                type: 'plasio.dangerzone.toggle',
+                active: newState,
+                riskLevel: this.state.riskLevel
+            });
+        },
+    
+        setRiskLevel: function(level) {
+            this.setState({ riskLevel: level });
+            
+            // ���µ�ǰ���յȼ�
+            $.event.trigger({
+                type: 'plasio.dangerzone.riskLevelChanged',
+                riskLevel: level
+            });
+        },
+    
+        removeDangerZone: function(index) {
+            var region = this.state.regions[index];
+            this.setState({ regions: _.without(this.state.regions, region) });
+            
+            $.event.trigger({
+                type: 'plasio.dangerzone.remove',
+                region: region
+            });
+        },
+    
+        render: function() {
+            var o = this;
+            var buttonClass = this.state.isActive ? 'btn btn-danger btn-sm btn-block active' : 'btn btn-default btn-sm btn-block';
+            
+            var riskColors = {
+                'low': '#28a745',    // 低风险颜色
+                'medium': '#ffc107', // 中风险颜色
+                'high': '#dc3545'    // 高风险颜色
+            };
+            
+            var dangerZonesList = this.state.regions.map(function(region, index) {
+                return (
+                    <div key={index} className="danger-zone-item" style={{marginBottom: '5px', padding: '5px', border: '1px solid #ddd', borderRadius: '3px'}}>
+                        <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
+                            <span style={{color: riskColors[region.riskLevel], fontWeight: 'bold'}}>
+                                {region.riskLevel === 'low' ? '低风险' : region.riskLevel === 'medium' ? '中风险' : '高风险'} 危险区域 {index + 1}
+                            </span>
+                            <button 
+                                className="btn btn-xs btn-danger"
+                                onClick={function() { o.removeDangerZone(index); }}
+                                title="删除危险区域">
+                                删除危险区域
+                            </button>
+                        </div>
+                    </div>
+                );
+            });
+            
+            return (
+                <div>
+                    <button 
+                        className={buttonClass}
+                        onClick={this.toggleDangerMode}
+                        style={{marginBottom: '10px'}}>
+                        {this.state.isActive ? '停止危险区域标记' : '开始危险区域标记'}
+                    </button>
+                    
+                    {this.state.isActive && (
+                        <div style={{marginBottom: '10px'}}>
+                            <div className="btn-group btn-group-sm" style={{width: '100%'}}>
+                                <button 
+                                    className={this.state.riskLevel === 'low' ? 'btn btn-success active' : 'btn btn-default'}
+                                    onClick={function() { o.setRiskLevel('low'); }}
+                                    style={{flex: 1}}>
+                                    低风险
+                                </button>
+                                <button 
+                                    className={this.state.riskLevel === 'medium' ? 'btn btn-warning active' : 'btn btn-default'}
+                                    onClick={function() { o.setRiskLevel('medium'); }}
+                                    style={{flex: 1}}>
+                                    中风险
+                                </button>
+                                <button 
+                                    className={this.state.riskLevel === 'high' ? 'btn btn-danger active' : 'btn btn-default'}
+                                    onClick={function() { o.setRiskLevel('high'); }}
+                                    style={{flex: 1}}>
+                                    高风险
+                                </button>
+                            </div>
+                            <small className="text-muted" style={{display: 'block', marginTop: '5px'}}>
+                                选择危险区域的风险等级，用于确定危险区域的颜色
+                            </small>
+                        </div>
+                    )}
+                    
+                    {this.state.regions.length > 0 && (
+                        <div>
+                            <h5>危险区域列表</h5>
+                            {dangerZonesList}
+                            <button 
+                                className="btn btn-warning btn-xs btn-block"
+                                onClick={function() { 
+                                    $.event.trigger({type: 'plasio.dangerzone.reset'});
+                                }}
+                                style={{marginTop: '10px'}}>
+                                重置危险区域
+                            </button>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+    });
+
+    var openGreyhoundPipelineButton = React.createClass({
+        getInitialState: function() {
+            return { show: false };
+        },
+
+        render:function() {
+            var o = this;
+            var close = function() { o.setState({ show: false }); };
+            var open = function() { o.setState({show: true}); };
+
+            return (
+                <div className="modal-container">
+                    <Button
+                        bsStyle="default"
+                        bsSize="small"
+                        className="btn-block"
+                        onClick={open}
+                    >
+                        Open
+                    </Button>
+
+                    <Modal
+                        show={this.state.show}
+                        onHide={close}
+                        container={this}
+                        aria-labelledby="contained-modal-title"
+                    >
+                        <OpenGreyhoundPipeline onRequestHide={close} />
+                    </Modal>
+                </div>
+            );
+        },
+    });
+
+    // export stuff
+    scope.InundationControls = InundationControls;
+    scope.LineSegmentsBox = LineSegmentsBox;
+    scope.RegionsBox = RegionsBox;
+    scope.openGreyhoundPipelineButton = openGreyhoundPipelineButton;
+
+    scope.DangerZoneControls = DangerZoneControls;
+
 })(module.exports);

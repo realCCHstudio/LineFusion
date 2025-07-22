@@ -1291,6 +1291,19 @@ var Promise = require("bluebird"),
                 type: 'plasio.mensuration.pointsReset'
             });
         });
+        
+        var dangerZoneActive = false;
+        var currentRiskLevel = 'low';
+        
+        // ����Σ������ģʽ�л�
+        $(document).on('plasio.dangerzone.toggle', function(e) {
+            dangerZoneActive = e.active;
+            currentRiskLevel = e.riskLevel;
+        });
+        
+        $(document).on('plasio.dangerzone.riskLevelChanged', function(e) {
+            currentRiskLevel = e.riskLevel;
+        });
 
         // TODO: This information should come down from somewhere, the UI module
         // should not assume that we know where the renderer is.  The render module has
@@ -1299,12 +1312,24 @@ var Promise = require("bluebird"),
         $("#container").on("dblclick", function(e) {
             if (!e.altKey) {
                 e.preventDefault();
-
-                $.event.trigger({
-                    type: 'plasio.mensuration.addPoint',
-                    x: e.clientX, y: e.clientY,
-                    startNew: e.shiftKey
-                });
+                
+                // ���Σ������ģʽ���ʹ��Σ�������߼�
+                if (dangerZoneActive) {
+                    $.event.trigger({
+                        type: 'plasio.mensuration.addPoint',
+                        x: e.clientX, y: e.clientY,
+                        startNew: e.shiftKey,
+                        isDangerZone: true,
+                        riskLevel: currentRiskLevel
+                    });
+                } else {
+                    // ԭ�еĲ������߼�
+                    $.event.trigger({
+                        type: 'plasio.mensuration.addPoint',
+                        x: e.clientX, y: e.clientY,
+                        startNew: e.shiftKey
+                    });
+                }
             }
         });
 
@@ -1385,6 +1410,9 @@ var Promise = require("bluebird"),
         });
 
         ReactDOM.render(<controls.RegionsBox />, $("#clipping-regions").get(0));
+        
+        // ��ȾΣ������������
+        ReactDOM.render(<controls.DangerZoneControls />, $("#danger-zone-controls").get(0));
     };
 
     var setupDocHandlers = function() {
