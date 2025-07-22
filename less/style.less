@@ -123,20 +123,37 @@ body {
 }
 
 .section {
-	margin-bottom: 25px; /* 从20px增加到25px */
-	background: rgba(45, 55, 72, 0.6);
-	border-radius: 12px;
-	padding: 15px;
-	border: 1px solid var(--border-color);
-	backdrop-filter: blur(10px);
-	transition: all 0.3s ease;
+	background: rgba(45, 55, 72, 0.8);
+	border-radius: 16px;
+	padding: 20px;
+	margin-bottom: 20px;
+	border: 1px solid rgba(56, 178, 172, 0.2);
+	backdrop-filter: blur(20px);
+	transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+	position: relative;
+	overflow: hidden;
+}
+
+.section::before {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	height: 3px;
+	background: linear-gradient(90deg, var(--accent-color), var(--accent-hover));
+	opacity: 0;
+	transition: opacity 0.3s ease;
+}
+
+.section:hover::before {
+	opacity: 1;
 }
 
 .section:hover {
-	background: rgba(45, 55, 72, 0.8);
+	transform: translateY(-4px);
+	box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
 	border-color: var(--accent-color);
-	transform: translateY(-2px);
-	box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
 }
 
 .section h3 {
@@ -343,4 +360,132 @@ body {
 	#colorCanvas canvas {
 		height: 14px;
 	}
+}
+
+/* 响应式网格布局 */
+.main-container {
+  display: grid;
+  grid-template-columns: 1fr 400px;
+  grid-template-rows: auto 1fr;
+  height: 100vh;
+  gap: 0;
+}
+
+.viewer-area {
+  grid-column: 1;
+  grid-row: 1 / -1;
+  position: relative;
+  overflow: hidden;
+}
+
+.control-panel {
+  grid-column: 2;
+  grid-row: 1 / -1;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--accent-color) var(--secondary-bg);
+}
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+  .main-container {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr auto;
+  }
+  
+  .control-panel {
+    grid-column: 1;
+    grid-row: 2;
+    max-height: 40vh;
+    border-top: 2px solid var(--accent-color);
+  }
+}
+
+.btn {
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  padding: 10px 16px;
+  border: 2px solid transparent;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--accent-color), var(--accent-hover));
+  color: white;
+  box-shadow: 0 4px 15px rgba(56, 178, 172, 0.3);
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(56, 178, 172, 0.4);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 10px rgba(56, 178, 172, 0.3);
+}
+
+/* 按钮加载状态 */
+.btn.loading {
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+.btn.loading::after {
+  content: '';
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  margin: auto;
+  border: 2px solid transparent;
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.drag-and-drop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(26, 32, 44, 0.95);
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+}
+
+.drag-and-drop.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.drag-and-drop .title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--accent-color);
+  text-align: center;
+  padding: 40px;
+  border: 3px dashed var(--accent-color);
+  border-radius: 20px;
+  background: rgba(56, 178, 172, 0.1);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
 }
