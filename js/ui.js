@@ -123,9 +123,9 @@ var Promise = require("bluebird"),
                 resize: true,
                 togglerContent_open:   "&#8250;",
                 togglerContent_closed: "&#8249;",
-                minSize: 200,
+                minSize: 600,
                 maxSize: 600,
-                size: 400
+                size: 600
             },
 
             onresize: function() {
