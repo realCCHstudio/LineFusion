@@ -626,11 +626,12 @@ var withRefresh = require('./util').withRefresh;
     scope.openGreyhoundPipelineButton = openGreyhoundPipelineButton;
 
     // Σ�������ע�������
+    // 修改现有的 DangerZoneControls 组件
     var DangerZoneControls = React.createClass({
         getInitialState: function() {
             return {
                 isActive: false,
-                riskLevel: 'low', // 'low', 'medium', 'high'
+                riskLevel: 'low',
                 regions: []
             };
         },
@@ -650,7 +651,6 @@ var withRefresh = require('./util').withRefresh;
             var newState = !this.state.isActive;
             this.setState({ isActive: newState });
             
-            // ����Σ�ձ��ģʽ�л��¼�
             $.event.trigger({
                 type: 'plasio.dangerzone.toggle',
                 active: newState,
@@ -661,7 +661,6 @@ var withRefresh = require('./util').withRefresh;
         setRiskLevel: function(level) {
             this.setState({ riskLevel: level });
             
-            // ���µ�ǰ���յȼ�
             $.event.trigger({
                 type: 'plasio.dangerzone.riskLevelChanged',
                 riskLevel: level
@@ -677,6 +676,41 @@ var withRefresh = require('./util').withRefresh;
                 region: region
             });
         },
+    
+        // 设置危险区域为条带类型
+        setRibbon: withRefresh(function(i) {
+            this.state.regions[i].type = 1;
+            this.setState({ regions: this.state.regions });
+            render.getDangerZoneController().setRibbon(i);
+        }),
+    
+        // 设置危险区域为轴对称类型
+        setAxisAligned: withRefresh(function(i) {
+            this.state.regions[i].type = 2;
+            this.setState({ regions: this.state.regions });
+            render.getDangerZoneController().setAxisAligned(i);
+        }),
+    
+        // 设置危险区域宽度
+        setWidth: withRefresh(function(i, w) {
+            this.state.regions[i].widthScale = w;
+            this.setState({ regions: this.state.regions });
+            render.getDangerZoneController().setWidth(i, w);
+        }),
+    
+        // 设置危险区域高度
+        setHeight: withRefresh(function(i, h) {
+            this.state.regions[i].heightScale = h;
+            this.setState({ regions: this.state.regions });
+            render.getDangerZoneController().setHeight(i, h);
+        }),
+    
+        // 切换危险区域显示状态
+        toggle: withRefresh(function(i) {
+            this.state.regions[i].active = !this.state.regions[i].active;
+            this.setState({ regions: this.state.regions });
+            render.getDangerZoneController().toggle(i);
+        }),
     
         render: function() {
             var o = this;
@@ -805,3 +839,111 @@ var withRefresh = require('./util').withRefresh;
     scope.DangerZoneControls = DangerZoneControls;
 
 })(module.exports);
+
+// 危险区域大小滑块组件
+var DangerZoneSizeSlider = React.createClass({
+    componentDidMount: function() {
+        var a = this.refs.sliderNode;
+        $(a).noUiSlider({
+            range: [1, 10],
+            start: Math.round(this.props.startScale),
+            step: 1,
+            handles: 1,
+            connect: false,
+            slide: this.setSize
+        });
+    },
+    render: function() {
+        return (
+            <div style={{ marginBottom: '15px' }} ref="sliderNode" />
+        );
+    },
+    setSize: function() {
+        var v = $(this.refs.sliderNode).val();
+        this.props.setSize(v);
+    }
+});
+
+// 单个危险区域控制组件
+var DangerZoneItem = React.createClass({
+    render: function() {
+        var cx = classNames;
+        var classesFor = function(active) {
+            return cx({
+                'btn': true,
+                'btn-default': true,
+                'btn-sm': true,
+                'active': active
+            });
+        };
+        
+        var riskColors = {
+            'low': '#28a745',
+            'medium': '#ffc107',
+            'high': '#dc3545'
+        };
+        
+        var riskLabels = {
+            'low': '低风险',
+            'medium': '中风险',
+            'high': '高风险'
+        };
+        
+        // 只有条带类型才显示大小调整滑块
+        var dangerZoneControls = this.props.dangerZone.type === 1 ? (
+            <div>
+                <div style={{marginBottom: '5px', fontSize: '12px', color: '#666'}}>宽度调整</div>
+                <DangerZoneSizeSlider
+                    dangerZone={this.props.dangerZone}
+                    startScale={this.props.dangerZone.widthScale}
+                    setSize={_.partial(this.props.setWidth, this.props.index)} />
+                <div style={{marginBottom: '5px', fontSize: '12px', color: '#666'}}>高度调整</div>
+                <DangerZoneSizeSlider
+                    dangerZone={this.props.dangerZone}
+                    startScale={this.props.dangerZone.heightScale}
+                    setSize={_.partial(this.props.setHeight, this.props.index)} />
+            </div>
+        ) : <div />;
+        
+        return (
+            <div style={{
+                borderLeft: '10px solid ' + riskColors[this.props.dangerZone.riskLevel],
+                marginBottom: '5px',
+                paddingLeft: '5px',
+                boxSizing: 'border-box'
+            }}>
+                <div
+                    className="btn btn-link btn-sm"
+                    onClick={_.partial(this.props.remove, this.props.index)}
+                    type="button"
+                    style={{
+                        float: 'right',
+                        padding: '0px'
+                    }}>
+                    <span className="glyphicon glyphicon-remove" />
+                </div>
+                <div style={{marginBottom: '5px', fontWeight: 'bold'}}>
+                    {riskLabels[this.props.dangerZone.riskLevel]} 危险区域 {this.props.index + 1}
+                </div>
+                <div
+                    className="btn-group btn-group-justified"
+                    style={{marginBottom: '10px'}}>
+                    <div
+                        className={classesFor(this.props.dangerZone.type === 1)}
+                        onClick={_.partial(this.props.setRibbon, this.props.index)}
+                        type="button">条带</div>
+                    <div
+                        className={classesFor(this.props.dangerZone.type === 2)}
+                        onClick={_.partial(this.props.setAxisAligned, this.props.index)}
+                        type="button">轴对齐</div>
+                </div>
+                {dangerZoneControls}
+                <button
+                    className={this.props.dangerZone.active ? 'btn btn-success btn-sm btn-block' : 'btn btn-default btn-sm btn-block'}
+                    onClick={_.partial(this.props.toggle, this.props.index)}>
+                    {this.props.dangerZone.active ? "禁用" : "启用"}
+                </button>
+            </div>
+        );
+    }
+});
