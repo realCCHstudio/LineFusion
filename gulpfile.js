@@ -44,7 +44,9 @@ var paths = {
     jade     : 'client/**/*.jade',
     html     : '*.html',
     docs     : 'docs/**/*',
-    build    : './build/'
+    build    : './build/',
+    images   : 'resources/images/**/*'
+
 };
 
 /**
@@ -139,6 +141,12 @@ gulp.task('less', function() {
 gulp.task('html', function() {
     return gulp.src(paths.html)
         .pipe(gulp.dest(paths.build));
+});
+
+// 新增：复制图片文件
+gulp.task('images', function() {
+    return gulp.src(paths.images)
+        .pipe(gulp.dest(path.join(paths.build, 'images')));
 });
 
 // 复制文档
@@ -256,7 +264,8 @@ gulp.task('build',
         'scripts',
         'resources',
         'html',
-        'docs'
+        'docs',
+        'images',
     )
 );
 
