@@ -173,7 +173,7 @@ var withRefresh = require('./util').withRefresh;
                 var p1 = this.state.points[i],
                 p2 = this.state.points[i+1];
                 if (p1.id === p2.id) {
-                    lines.push(LineSegment({ lineIndex: index+1, start: p1, end: p2 }));
+                    lines.push(React.createElement(LineSegment, { key: index, lineIndex: index+1, start: p1, end: p2 }));
                     index ++;
                 }
             }
