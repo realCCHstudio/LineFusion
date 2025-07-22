@@ -839,9 +839,9 @@ var DangerZoneSizeSlider = React.createClass({
     componentDidMount: function() {
         var a = this.refs.sliderNode;
         $(a).noUiSlider({
-            range: [1, 10],
-            start: Math.round(this.props.startScale),
-            step: 1,
+            range: [0.1, 5],  // 调整范围从 [1, 10] 改为 [0.1, 5]
+            start: Math.max(0.1, Math.min(5, this.props.startScale)), // 确保初始值在新范围内
+            step: 0.1,        // 调整步长从 1 改为 0.1，更精细
             handles: 1,
             connect: false,
             slide: this.setSize
@@ -854,7 +854,7 @@ var DangerZoneSizeSlider = React.createClass({
     },
     setSize: function() {
         var v = $(this.refs.sliderNode).val();
-        this.props.setSize(v);
+        this.props.setSize(parseFloat(v)); // 确保传递浮点数值
     }
 });
 
