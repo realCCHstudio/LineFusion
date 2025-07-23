@@ -4,6 +4,50 @@
 // All UI stuff goes here
 //
 
+/* ---------- 提取电力线按钮处理 ---------- */
+function setupPowerlineHandlers() {
+    const $btn    = $('#extract-powerline-btn');
+    const $label  = $btn.find('.btn-text');
+    const $status = $('#powerline-status');
+
+    $(document).on('plasio.load.started', () => {
+        $btn.prop('disabled', true);
+        $label.text('提取电力线');
+        $status.text('');
+    });
+
+    $(document).on('plasio.load.completed', () => {
+        $btn.prop('disabled', false);
+        $status.text('点击按钮选择文件并提取');
+    });
+
+    $btn.on('click', async () => {
+        try {
+            const lasPath = await window.electronAPI.pickLas();
+            if (!lasPath) return;                     // 用户取消
+
+            $btn.prop('disabled', true);
+            $label.text('正在处理…');
+            $status.text('Python 脚本运行中，请稍候…');
+
+            const { outputPath } = await window.electronAPI.runLasProcess(lasPath);
+
+            $label.text('提取完成');
+            $status.text(`已保存到：${outputPath}`);
+            $btn.prop('disabled', false);
+
+            // 如需立刻加载生成结果，可在此触发 plasio.loadfiles.local
+            // $.event.trigger({ type:'plasio.loadfiles.local', files:[{path:outputPath}] });
+        } catch (err) {
+            console.error(err);
+            alert('提取失败：' + err.message);
+            $label.text('提取电力线');
+            $btn.prop('disabled', false);
+            $status.text('');
+        }
+    });
+}
+
 var Promise = require("bluebird"),
     $ = require('jquery'),
     render = require("./render"),
@@ -12,15 +56,15 @@ var Promise = require("bluebird"),
     ReactDOM = require('react-dom'),
     _ = require('lodash'),
     controls = require('./controls');
-    withRefresh = require('./util').withRefresh;
-    util = require('./util');
-    greyhound = require("greyhound.js");
-    gh = require('./gh-loader');
+withRefresh = require('./util').withRefresh;
+util = require('./util');
+greyhound = require("greyhound.js");
+gh = require('./gh-loader');
 
-    require("jqueryui");
-    require("jquery-layout");
-    require("jquery-nouislider");
-    require("bootstrap");
+require("jqueryui");
+require("jquery-layout");
+require("jquery-nouislider");
+require("bootstrap");
 
 (function(scope) {
     "use strict";
@@ -123,9 +167,9 @@ var Promise = require("bluebird"),
                 resize: true,
                 togglerContent_open:   "&#8250;",
                 togglerContent_closed: "&#8249;",
-                minSize: 600,
+                minSize: 200,
                 maxSize: 600,
-                size: 600
+                size: 400
             },
 
             onresize: function() {
@@ -153,6 +197,9 @@ var Promise = require("bluebird"),
         setupScaleObjectsHandlers();
         setupRegionHandlers();
         setupDocHandlers();
+
+        // ===== [新增] 3b. 调用新添加的函数来初始化电力线提取模块 =====
+        setupPowerlineHandlers();
 
 
         // get the currently selected image
@@ -277,33 +324,33 @@ var Promise = require("bluebird"),
         });
     };
 
-	var loadCreditsFile = function(sourceFile) {
-		console.log("Loading credits for:", sourceFile);
+    var loadCreditsFile = function(sourceFile) {
+        console.log("Loading credits for:", sourceFile);
 
-		if (sourceFile instanceof File) {
-			sourceFile = sourceFile.name;
-		}
+        if (sourceFile instanceof File) {
+            sourceFile = sourceFile.name;
+        }
 
-		var f = sourceFile.lastIndexOf(".");
-		var creditsFile = "";
-		if (f === -1) {
-			sourceFile += ".json";
-		}
-		else {
-			creditsFile = sourceFile.substr(0, f) + ".json";
-		}
+        var f = sourceFile.lastIndexOf(".");
+        var creditsFile = "";
+        if (f === -1) {
+            sourceFile += ".json";
+        }
+        else {
+            creditsFile = sourceFile.substr(0, f) + ".json";
+        }
 
-		console.log("Credits file:", creditsFile);
+        console.log("Credits file:", creditsFile);
 
-		return new Promise(function(resolve, reject) {
-			$.get(creditsFile, function(data) {
-				console.log("------------------ credits:", data);
-				resolve(data);
-			}).fail(function() {
-				resolve({});
-			});
-		});
-	};
+        return new Promise(function(resolve, reject) {
+            $.get(creditsFile, function(data) {
+                console.log("------------------ credits:", data);
+                resolve(data);
+            }).fail(function() {
+                resolve({});
+            });
+        });
+    };
 
     var loadFileInformation = function(header) {
         $(".props table").html(
@@ -438,7 +485,7 @@ var Promise = require("bluebird"),
 
                     console.log('Loading batch:', batcher);
                     maxColorComponent = Math.max(maxColorComponent,
-                                                 batcher.cx.r, batcher.cx.g, batcher.cx.b);
+                        batcher.cx.r, batcher.cx.g, batcher.cx.b);
                     batcher.scale = scale;
                     b.push({
                         batcher: batcher,
@@ -521,13 +568,13 @@ var Promise = require("bluebird"),
                 lf.isOpen = true;
                 return lf;
             })
-            .catch(Promise.CancellationError, function(e) {
-                // open message was sent at this point, but then handler was not called
-                // because the operation was cancelled, explicitly close the file
-                return lf.close().then(function() {
-                    throw e;
+                .catch(Promise.CancellationError, function(e) {
+                    // open message was sent at this point, but then handler was not called
+                    // because the operation was cancelled, explicitly close the file
+                    return lf.close().then(function() {
+                        throw e;
+                    });
                 });
-            });
         }).then(function(lf) {
             console.log("getting header");
             return lf.getHeader().then(function(h) {
@@ -542,36 +589,36 @@ var Promise = require("bluebird"),
                 $("#vertexshader").text(),
                 $("#fragmentshader").text());
 
-                var skip = Math.round((10 - currentLoadFidelity()));
-                var totalRead = 0;
-                var totalToRead = (skip <= 1 ? header.pointsCount : header.pointsCount / skip);
-                var reader = function() {
-                    var p = lf.readData(1000000, 0, skip);
-                    return p.then(function(data) {
-                        console.log(header);
-                        var Unpacker = lf.getUnpacker();
+            var skip = Math.round((10 - currentLoadFidelity()));
+            var totalRead = 0;
+            var totalToRead = (skip <= 1 ? header.pointsCount : header.pointsCount / skip);
+            var reader = function() {
+                var p = lf.readData(1000000, 0, skip);
+                return p.then(function(data) {
+                    console.log(header);
+                    var Unpacker = lf.getUnpacker();
 
-                        batcher.push(new Unpacker(data.buffer,
-                                                  data.count,
-                                                  header));
+                    batcher.push(new Unpacker(data.buffer,
+                        data.count,
+                        header));
 
-                        totalRead += data.count;
-                        progressCB(totalRead / totalToRead);
+                    totalRead += data.count;
+                    progressCB(totalRead / totalToRead);
 
-                        if (data.hasMoreData)
-                            return reader();
-                        else {
+                    if (data.hasMoreData)
+                        return reader();
+                    else {
 
-                            header.totalRead = totalRead;
-                            header.versionAsString = lf.versionAsString;
-                            header.isCompressed = lf.isCompressed;
-                            return [lf, header, batcher];
-                        }
-                    });
-                };
+                        header.totalRead = totalRead;
+                        header.versionAsString = lf.versionAsString;
+                        header.isCompressed = lf.isCompressed;
+                        return [lf, header, batcher];
+                    }
+                });
+            };
 
-                // return the lead reader
-                return reader();
+            // return the lead reader
+            return reader();
         }).then(function(v) {
             var lf = v[0];
             // we're done loading this file
@@ -604,9 +651,7 @@ var Promise = require("bluebird"),
 
     var setupFileOpenHandlers = function() {
         $("#browseCancel button").on("click", withRefresh(function() {
-            $.event.trigger({
-                type: "plasio.load.cancel"
-            });
+            $.event.trigger({ type: "plasio.load.cancel" });
         }));
 
         $(".btn-file").on("click", function(e) {
@@ -614,7 +659,7 @@ var Promise = require("bluebird"),
             $("#filebrowser").click();
         });
 
-        $(document).on('change', '#filebrowser', withRefresh(function(e) {
+        $(document).on('change', '#filebrowser', withRefresh(async function (e) {
             e.preventDefault();
             var input = $(this);
             var files = input.get(0).files;
@@ -701,27 +746,27 @@ var Promise = require("bluebird"),
                     console.log(fname.name, 'Done loading file, loading data...');
                     return loadData(lf, data, pfuncDecompress);
                 })
-	            .then(function(r) {
-		            // pass through the data, but query if we have any credits for this file
-		            return loadCreditsFile(fname).then(function(credits) {
-			            r[1].credits = credits;
+                    .then(function(r) {
+                        // pass through the data, but query if we have any credits for this file
+                        return loadCreditsFile(fname).then(function(credits) {
+                            r[1].credits = credits;
 
-			            return r;
-		            });
-	            })
-                .then(function(r) {
-                    console.log(fname.name, 'Done loading data...');
-                    var ret = {
-                        header: r[0],
-                        batcher: r[1]
-                    };
+                            return r;
+                        });
+                    })
+                    .then(function(r) {
+                        console.log(fname.name, 'Done loading data...');
+                        var ret = {
+                            header: r[0],
+                            batcher: r[1]
+                        };
 
-                    // TODO: This needs to be fixed for mutliple URLs
-                    //
-                    ret.header.name = fname.name || name;
-                    currentLoadIndex ++;
-                    sofar.push(ret);
-                });
+                        // TODO: This needs to be fixed for mutliple URLs
+                        //
+                        ret.header.name = fname.name || name;
+                        currentLoadIndex ++;
+                        sofar.push(ret);
+                    });
             });
         });
 
@@ -731,26 +776,26 @@ var Promise = require("bluebird"),
                 batches: sofar
             });
         })
-        .catch(Promise.CancellationError, function(e) {
-            console.log(e, e.stack);
+            .catch(Promise.CancellationError, function(e) {
+                console.log(e, e.stack);
 
-            $.event.trigger({
-                type: "plasio.load.cancelled",
+                $.event.trigger({
+                    type: "plasio.load.cancelled",
+                });
+            })
+            .catch(function(e) {
+                console.log(e, e.stack);
+
+                $.event.trigger({
+                    type: "plasio.load.failed",
+                    error: "Failed to load file"
+                });
+            })
+            .finally(function() {
+                progress(1);
+
+                loaderPromise = null;
             });
-        })
-        .catch(function(e) {
-            console.log(e, e.stack);
-
-            $.event.trigger({
-                type: "plasio.load.failed",
-                error: "Failed to load file"
-            });
-        })
-        .finally(function() {
-            progress(1);
-
-            loaderPromise = null;
-        });
     };
 
     var setupSliders = function() {
@@ -814,23 +859,23 @@ var Promise = require("bluebird"),
 
         $pbfps.html(currentPlaybackRate() + "fps");
 
-	    var setCredits = function(credits) {
-		    var c = credits.credits;
-		    var u = credits.link;
+        var setCredits = function(credits) {
+            var c = credits.credits;
+            var u = credits.link;
 
-		    var $credits = $("#credits");
+            var $credits = $("#credits");
 
-		    if (c && u) {
-			    $credits.
-				    html("<a href='" + u + "' target='_blanks'>" + c + "</a>").
-				    show();
-		    }
-		    else {
-			    $credits.hide();
-		    }
-		    
-		    console.log(credits);
-	    };
+            if (c && u) {
+                $credits.
+                html("<a href='" + u + "' target='_blanks'>" + c + "</a>").
+                show();
+            }
+            else {
+                $credits.hide();
+            }
+
+            console.log(credits);
+        };
 
         var setCurrentBatcher = function(index, resetCamera) {
             console.log('Setting active batcher at index:', index);
@@ -839,7 +884,7 @@ var Promise = require("bluebird"),
             render.loadBatcher(b.batcher, resetCamera);
             loadFileInformation(b.header);
 
-	        setCredits(b.batcher.credits);
+            setCredits(b.batcher.credits);
 
             $.event.trigger({
                 type: "plasio.needRefresh"
@@ -1156,10 +1201,10 @@ var Promise = require("bluebird"),
     var setupWebGLStateErrorHandler = function() {
         $(document).on("plasio.webglIsExperimental", function() {
             $("#webglinfo").html("<div class='alert alert-warning'>" +
-                                "<span class='glyphicon glyphicon-info-sign'></span>&nbsp;" +
-                                 "<strong>实验性 WebGL！</strong><br>" +
-                                 "您的浏览器报告其 WebGL 支持为实验性。" +
-                                 " 您可能会遇到渲染问题。</div>");
+                "<span class='glyphicon glyphicon-info-sign'></span>&nbsp;" +
+                "<strong>实验性 WebGL！</strong><br>" +
+                "您的浏览器报告其 WebGL 支持为实验性。" +
+                " 您可能会遇到渲染问题。</div>");
             $("#webglinfo").show();
         });
     };
@@ -1234,7 +1279,7 @@ var Promise = require("bluebird"),
             .addClass("clearfix p-collapse-open")
             .css("cursor", "pointer")
             .append("<div class='toggle-control'>" +
-                    "<span class='glyphicon glyphicon-chevron-up'></span></div>");
+                "<span class='glyphicon glyphicon-chevron-up'></span></div>");
         $(".p-head h3").css("float", "left");
 
         $("body").on("click", ".p-head", function() {
@@ -1291,16 +1336,16 @@ var Promise = require("bluebird"),
                 type: 'plasio.mensuration.pointsReset'
             });
         });
-        
+
         var dangerZoneActive = false;
         var currentRiskLevel = 'low';
-        
+
         // ����Σ������ģʽ�л�
         $(document).on('plasio.dangerzone.toggle', function(e) {
             dangerZoneActive = e.active;
             currentRiskLevel = e.riskLevel;
         });
-        
+
         $(document).on('plasio.dangerzone.riskLevelChanged', function(e) {
             currentRiskLevel = e.riskLevel;
         });
@@ -1312,7 +1357,7 @@ var Promise = require("bluebird"),
         $("#container").on("dblclick", function(e) {
             if (!e.altKey) {
                 e.preventDefault();
-                
+
                 // ���Σ������ģʽ���ʹ��Σ�������߼�
                 if (dangerZoneActive) {
                     $.event.trigger({
@@ -1410,7 +1455,7 @@ var Promise = require("bluebird"),
         });
 
         ReactDOM.render(<controls.RegionsBox />, $("#clipping-regions").get(0));
-        
+
         // ��ȾΣ������������
         ReactDOM.render(<controls.DangerZoneControls />, $("#danger-zone-controls").get(0));
     };
@@ -1453,20 +1498,19 @@ var Promise = require("bluebird"),
                 $title.text(data.title);
 
                 $body.
-                    html('').
-                    append(
-                        $('<p>').html(data.summary),
-                        $('<video>', { controls: true, autoplay: true, style: 'width:100%;height:auto;' }).append(
-                            $('<source>', { src: data.video, type: 'video/webm' }),
-                            "您的播放器不支持 HTML5 视频，您仍然可以从 <a href='" + data.video + "'>这里</a> 下载视频"
-                        ),
-                        $('<div>', { class: 'tags' }).append(
-                            $('<p>').text('标签'),
-                            data.tags.map(function(t) {
-                                return $('<button>', { type: 'button', class:'btn btn-sm btn-default', 'data-offset': t.offset}).text(t.title);
-                            })));
+                html('').
+                append(
+                    $('<p>').html(data.summary),
+                    $('<video>', { controls: true, autoplay: true, style: 'width:100%;height:auto;' }).append(
+                        $('<source>', { src: data.video, type: 'video/webm' }),
+                        "您的播放器不支持 HTML5 视频，您仍然可以从 <a href='" + data.video + "'>这里</a> 下载视频"
+                    ),
+                    $('<div>', { class: 'tags' }).append(
+                        $('<p>').text('标签'),
+                        data.tags.map(function(t) {
+                            return $('<button>', { type: 'button', class:'btn btn-sm btn-default', 'data-offset': t.offset}).text(t.title);
+                        })));
             });
         });
     };
 })(window);
-

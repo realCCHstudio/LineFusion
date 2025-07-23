@@ -44,28 +44,30 @@ var paths = {
     jade     : 'client/**/*.jade',
     html     : '*.html',
     docs     : 'docs/**/*',
+    images   : 'resources/images/**/*',
     build    : './build/',
-    images   : 'resources/images/**/*'
 
+    // ===== [修改] 1. 在这里添加新文件的路径 =====
+    pythonScript: 'lasprocess.py'
 };
 
 /**
  * Tasks:
  *
- *  build (default):
- *    builds the client into ./dist
+ * build (default):
+ * builds the client into ./dist
  *
- *  develop:
- *    builds client, and runs auto reloading dev server
+ * develop:
+ * builds client, and runs auto reloading dev server
  *
- *  lint:
- *    lint all javascript sourcefiles
+ * lint:
+ * lint all javascript sourcefiles
  *
- *  test:
- *    run mocha tests in ./test/
+ * test:
+ * run mocha tests in ./test/
  *
- *  debug:
- *    like develop but also runs tests and linting
+ * debug:
+ * like develop but also runs tests and linting
  */
 
 // 错误处理函数
@@ -81,7 +83,7 @@ function startServer(path, cb) {
     devApp.use(logger('dev'));
     devApp.use(serveStatic(path));
     devServer = http.createServer(devApp).listen(8000);
-    
+
     devServer.on('error', function(error) {
         log(colors.underline(colors.red('ERROR'))+' Unable to start server!');
         cb(error);
@@ -143,7 +145,7 @@ gulp.task('html', function() {
         .pipe(gulp.dest(paths.build));
 });
 
-// 新增：复制图片文件
+// 复制图片文件
 gulp.task('images', function() {
     return gulp.src(paths.images)
         .pipe(gulp.dest(path.join(paths.build, 'images')));
@@ -168,6 +170,14 @@ gulp.task('bad-scripts', function() {
         .pipe(gulp.dest(paths.build));
 });
 
+// ===== [修改] 2. 在这里添加复制新文件的任务 =====
+// 复制 lasprocess.py
+gulp.task('python', function() {
+    return gulp.src(paths.pythonScript)
+        .pipe(gulp.dest(paths.build));
+});
+
+
 // 构建客户端 JS
 gulp.task('scripts', function() {
     return browserify({
@@ -175,11 +185,11 @@ gulp.task('scripts', function() {
         debug: process.env.NODE_ENV !== 'production',
         transform: ['reactify']
     })
-    .bundle()
-    .on('error', handleError)
-    .pipe(source('client.js'))
-    .pipe(buffer())
-    .pipe(gulp.dest(paths.build));
+        .bundle()
+        .on('error', handleError)
+        .pipe(source('client.js'))
+        .pipe(buffer())
+        .pipe(gulp.dest(paths.build));
 });
 
 // 构建测试
@@ -188,11 +198,11 @@ gulp.task('build-specs', function() {
         entries: [paths.specs],
         debug: true
     })
-    .bundle()
-    .on('error', handleError)
-    .pipe(source('specs.js'))
-    .pipe(buffer())
-    .pipe(gulp.dest("test/build"));
+        .bundle()
+        .on('error', handleError)
+        .pipe(source('specs.js'))
+        .pipe(buffer())
+        .pipe(gulp.dest("test/build"));
 });
 
 // 优化 JS
@@ -254,7 +264,7 @@ gulp.task('livereload-tests', function(done) {
 });
 
 // 构建任务
-gulp.task('build', 
+gulp.task('build',
     gulp.parallel(
         'css',
         'less',
@@ -266,6 +276,7 @@ gulp.task('build',
         'html',
         'docs',
         'images',
+        'python'
     )
 );
 
@@ -278,7 +289,7 @@ gulp.task('publish', gulp.series('prod-build', function() {
     var settings = require(path.join(homeDir, ".aws.json"));
 
     settings.bucket = "plas.io";
-    
+
     if (!settings.apiVersion) {
         settings.apiVersion = '2006-03-01';
     }
@@ -295,4 +306,3 @@ gulp.task('publish', gulp.series('prod-build', function() {
 gulp.task('default', gulp.series('build'));
 gulp.task('develop', gulp.series('build', gulp.parallel('serve', 'watch', 'livereload')));
 gulp.task('tdd', gulp.series('serve-specs', 'watch-specs', 'livereload-tests'));
-

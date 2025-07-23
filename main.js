@@ -1,68 +1,84 @@
-const { app, BrowserWindow } = require('electron');
-const path = require('path');
+// main.js  ─ 主进程入口 (最终版)
+const { app, BrowserWindow, ipcMain, shell, dialog } = require('electron');
+const path        = require('path');
+const { execFile }= require('child_process');
 
-// 添加日志
-const log = require('electron-log');
-log.transports.file.level = 'info';
-log.info('应用程序启动');
+/* ────────────── 全局常量 ────────────── */
+const isDev      = process.env.NODE_ENV === 'development' || !app.isPackaged;
+const preloadPath= path.join(__dirname, 'preload.js');
+const pythonExe  = isDev
+    ? 'python'
+    : path.join(process.resourcesPath, 'python', 'python.exe');
 
-function createWindow() {
-    // 创建浏览器窗口
-    const mainWindow = new BrowserWindow({
+/* ────────────── 工具函数 ────────────── */
+function runPython(inputPath, cb) {
+    const scriptPath = isDev
+        ? path.join(__dirname, 'lasprocess.py')
+        : path.join(process.resourcesPath, 'app.asar.unpacked', 'lasprocess.py');
+
+    const outputPath = path.join(
+        app.getPath('downloads'),
+        `processed_${path.basename(inputPath)}`
+    );
+
+    execFile(
+        pythonExe,
+        [scriptPath, inputPath, outputPath],
+        { env: { ...process.env, PYTHONHOME: '', PYTHONPATH: '' } },
+        (err, stdout, stderr) => {
+            if (err) return cb(err);
+            shell.showItemInFolder(outputPath);
+            cb(null, { stdout, outputPath });
+        }
+    );
+}
+
+/* ────────────── 主窗口 ────────────── */
+function createWindow () {
+    const win = new BrowserWindow({
         width: 1200,
         height: 800,
         webPreferences: {
-            nodeIntegration: true,
-            contextIsolation: false,
-            webSecurity: false, // 允许加载本地资源
-            allowRunningInsecureContent: true // 允许加载混合内容
+            preload: preloadPath,
+            nodeIntegration: false,
+            contextIsolation: true,
+            sandbox: false
         }
     });
 
-    log.info('创建主窗口');
-
-    // 加载构建目录中的 index.html
-    mainWindow.loadFile(path.join(__dirname, 'build', 'index.html'));
-    
-    // 打开开发者工具以便调试
-    // mainWindow.webContents.openDevTools();
-
-    // 监听页面加载完成事件
-    mainWindow.webContents.on('did-finish-load', () => {
-        log.info('页面加载完成');
-    });
-
-    // 监听页面加载失败事件
-    mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
-        log.error('页面加载失败:', errorDescription);
-    });
-
-    mainWindow.on('closed', () => {
-        log.info('主窗口关闭');
-    });
+    if (isDev) {
+        win.loadURL('http://localhost:8000/index.html');
+        win.webContents.openDevTools();
+    } else {
+        win.loadFile(path.join(__dirname, 'build', 'index.html'));
+    }
 }
 
-// 当 Electron 完成初始化时创建窗口
-app.whenReady().then(() => {
-    createWindow();
-
-    app.on('activate', () => {
-        // 在 macOS 上，当点击 dock 图标并且没有其他窗口打开时，
-        // 通常在应用程序中重新创建一个窗口。
-        if (BrowserWindow.getAllWindows().length === 0) {
-            createWindow();
-        }
+/* ────────────── IPC ────────────── */
+ipcMain.handle('pick-las', async () => {
+    const { canceled, filePaths } = await dialog.showOpenDialog({
+        title: '选择 LAS / LAZ 文件',
+        filters: [{ name: 'LAS/LAZ', extensions: ['las', 'laz'] }],
+        properties: ['openFile']
     });
+    return canceled ? null : filePaths[0];
 });
 
-// 当所有窗口都被关闭时退出
+ipcMain.handle('run-las-process', async (_evt, inputPath) =>
+    new Promise((resolve, reject) => {
+        if (!inputPath) return reject(new Error('空路径'));
+        runPython(inputPath, (err, res) => {
+            if (err) return reject(err);
+            resolve(res);
+        });
+    })
+);
+
+/* ────────────── 生命周期 ────────────── */
+app.whenReady().then(createWindow);
+app.on('activate', () => {
+    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+});
 app.on('window-all-closed', () => {
-    log.info('所有窗口关闭，准备退出应用');
-    if (process.platform !== 'darwin') {
-        app.quit();
-    }
+    if (process.platform !== 'darwin') app.quit();
 });
-
-process.on('uncaughtException', (error) => {
-    log.error('未捕获的异常：', error);
-}); 

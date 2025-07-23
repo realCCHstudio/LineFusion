@@ -6,34 +6,34 @@
     <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
     <link rel="stylesheet" href="css/style.css" type="text/css">
     <style>
-        /* Open Sans 字体定义 */
-        @font-face {
-            font-family: 'Open Sans';
-            font-style: normal;
-            font-weight: 400;
-            src: local('Open Sans Regular'), local('OpenSans-Regular'),
-            url('fonts/OpenSans-Regular.woff2') format('woff2'),
-            url('fonts/OpenSans-Regular.woff') format('woff');
-        }
+        /*!* Open Sans 字体定义 *!*/
+        /*@font-face {*/
+        /*    font-family: 'Open Sans';*/
+        /*    font-style: normal;*/
+        /*    font-weight: 400;*/
+        /*    src: local('Open Sans Regular'), local('OpenSans-Regular'),*/
+        /*    url('fonts/OpenSans-Regular.woff2') format('woff2'),*/
+        /*    url('fonts/OpenSans-Regular.woff') format('woff');*/
+        /*}*/
 
-        @font-face {
-            font-family: 'Open Sans';
-            font-style: normal;
-            font-weight: 700;
-            src: local('Open Sans Bold'), local('OpenSans-Bold'),
-            url('fonts/OpenSans-Bold.woff2') format('woff2'),
-            url('fonts/OpenSans-Bold.woff') format('woff');
-        }
+        /*@font-face {*/
+        /*    font-family: 'Open Sans';*/
+        /*    font-style: normal;*/
+        /*    font-weight: 700;*/
+        /*    src: local('Open Sans Bold'), local('OpenSans-Bold'),*/
+        /*    url('fonts/OpenSans-Bold.woff2') format('woff2'),*/
+        /*    url('fonts/OpenSans-Bold.woff') format('woff');*/
+        /*}*/
 
-        /* Archivo Black 字体定义 */
-        @font-face {
-            font-family: 'Archivo Black';
-            font-style: normal;
-            font-weight: 400;
-            src: local('Archivo Black Regular'), local('ArchivoBlack-Regular'),
-            url('fonts/ArchivoBlack-Regular.woff2') format('woff2'),
-            url('fonts/ArchivoBlack-Regular.woff') format('woff');
-        }
+        /*!* Archivo Black 字体定义 *!*/
+        /*@font-face {*/
+        /*    font-family: 'Archivo Black';*/
+        /*    font-style: normal;*/
+        /*    font-weight: 400;*/
+        /*    src: local('Archivo Black Regular'), local('ArchivoBlack-Regular'),*/
+        /*    url('fonts/ArchivoBlack-Regular.woff2') format('woff2'),*/
+        /*    url('fonts/ArchivoBlack-Regular.woff') format('woff');*/
+        /*}*/
     </style>
     <style>
         #loader-wrapper {
@@ -53,9 +53,9 @@
         }
 
         #loader-wrapper img {
-            max-width: 1000px; /* 您可以根据图片大小调整 */
+            max-width: 600px;
             border: 2px solid #D3D3D3;
-            width: 80%;
+            width: 50%;
         }
 
         /* 这个类将由JS添加，用于隐藏加载画面 */
@@ -133,7 +133,22 @@
                 </div>
             </div>
         </div>
-
+        <div class="section">
+            <div class="p-head">
+                <h3>电力线提取</h3>
+            </div>
+            <div class="p-body">
+                <div class="labeled-controls">
+                    <h4>自动提取</h4>
+                    <h5>自动识别并提取点云中的电力线。</h5>
+                    <button type="button" class="btn btn-primary btn-block" id="extract-powerline-btn" disabled>
+                        <span class="btn-text">提取电力线</span>
+                        <span class="spinner"></span>
+                    </button>
+                    <small id="powerline-status" class="status-text"></small>
+                </div>
+            </div>
+        </div>
         <div class="section">
             <div class="p-head">
                 <h3>相机</h3>

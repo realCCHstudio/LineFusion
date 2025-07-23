@@ -56,9 +56,9 @@ $(function() {
         }
     };
 
-    // 设置一个15秒的超时，作为后备方案
-    // 如果15秒后页面还没加载完，也强制隐藏加载画面
-    const loadTimeout = setTimeout(hideLoader, 15000);
+    // 设置一个40秒的超时，作为后备方案
+    // 如果40秒后页面还没加载完，也强制隐藏加载画面
+    const loadTimeout = setTimeout(hideLoader, 40000); // 40000 毫秒 = 40 秒
 
     // 检查 WebGL 支持
     const isWebGLSupported = function() {

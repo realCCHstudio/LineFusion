@@ -1,7 +1,7 @@
 {
-  "name": "plasio",
+  "name": "linefusion",
   "version": "0.0.1",
-  "description": "Online LAZ/LAS file viewer",
+  "description": "Automated lidir power line extraction and fitting",
   "main": "main.js",
   "devDependencies": {
     "browserify": "^17.0.0",
@@ -55,7 +55,7 @@
     "type": "git",
     "url": "git@github.com:verma/plasio.git"
   },
-  "author": "Uday Verma & Howard Butler",
+  "author": "CCH&ZHY&WBS",
   "license": "MIT",
   "browserify": {
     "transform": [
@@ -102,8 +102,8 @@
     "puppeteer": "^24.3.0"
   },
   "build": {
-    "appId": "com.plasio.app",
-    "productName": "Plasio Viewer",
+    "appId": "com.zxrz.linefusion",
+    "productName": "Linefusion",
     "directories": {
       "output": "dist"
     },
@@ -111,14 +111,17 @@
       "build/**/*",
       "main.js",
       "package.json",
-      "node_modules/**/*"
+      "node_modules/**/*",
+      "preload.js",
+      "lasprocess.py"
     ],
     "extraResources": [
       {
         "from": "build/",
         "to": "build",
         "filter": ["**/*"]
-      }
+      },
+      { "from": "resources/python", "to": "python" }
     ],
     "win": {
       "target": [
@@ -135,19 +138,24 @@
           ]
         }
       ],
-      "icon": "resources/icon.ico"
+      "icon": "images/linefusion.ico"
     },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "Plasio Viewer",
-      "installerIcon": "resources/icon.ico",
-      "uninstallerIcon": "resources/icon.ico"
+      "shortcutName": "Linefusion",
+      "installerIcon": "images/install.ico",
+      "uninstallerIcon": "images/uninstall.ico"
     },
     "npmRebuild": false,
     "buildDependenciesFromSource": false,
+    "asarUnpack": [
+      "preload.js",
+      "lasprocess.py",
+      "resources/python/**/*"
+    ],
     "asar": true
   }
 }

@@ -189,7 +189,7 @@ var THREE = require("three"),
 		};
 	})();
 
-	// Î£ÏÕÇøÓò¿ØÖÆÆ÷
+	// Î£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	function DangerZoneController() {
 		this.dangerZones = [];
 		this.isActive = false;
@@ -210,9 +210,9 @@ var THREE = require("three"),
 		if (!this.isActive) return;
 		
 		var riskColors = {
-			'low': new THREE.Color(0x28a745),    // ÂÌÉ«
-			'medium': new THREE.Color(0xffc107), // »ÆÉ«
-			'high': new THREE.Color(0xdc3545)    // ºìÉ«
+			'low': new THREE.Color(0x28a745),    // ï¿½ï¿½É«
+			'medium': new THREE.Color(0xffc107), // ï¿½ï¿½É«
+			'high': new THREE.Color(0xdc3545)    // ï¿½ï¿½É«
 		};
 		
 		var dangerZone = {
@@ -220,7 +220,7 @@ var THREE = require("three"),
 			end: p2,
 			riskLevel: this.currentRiskLevel,
 			color: riskColors[this.currentRiskLevel],
-			type: 1, // Ä¬ÈÏÎªÌõ´øÀàÐÍ
+			type: 1, // Ä¬ï¿½ï¿½Îªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 			widthScale: 3,
 			heightScale: 3,
 			active: true,
@@ -291,7 +291,7 @@ var THREE = require("three"),
 		var o = this;
 		
 		this.dangerZones.forEach(function(zone) {
-			if (!zone.active) return; // Ö»äÖÈ¾¼¤»îµÄÎ£ÏÕÇøÓò
+			if (!zone.active) return; // Ö»ï¿½ï¿½È¾ï¿½ï¿½ï¿½ï¿½ï¿½Î£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 			
 			var scene = new THREE.Scene();
 			var mat = new THREE.MeshBasicMaterial({ 
@@ -304,10 +304,10 @@ var THREE = require("three"),
 			v.copy(zone.end).sub(zone.start);
 			vmid.copy(v).multiplyScalar(0.5);
 			
-			if (zone.type === 2) { // Öá¶Ô³ÆÀàÐÍ
+			if (zone.type === 2) { // ï¿½ï¿½Ô³ï¿½ï¿½ï¿½ï¿½ï¿½
 				m.position.copy(zone.start).add(vmid);
 				m.scale.copy(v);
-			} else { // Ìõ´øÀàÐÍ
+			} else { // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 				m.position.copy(zone.start).add(vmid);
 				m.scale.set(zone.widthScale * o.scaleFactor, zone.heightScale * o.scaleFactor, v.length());
 				m.lookAt(zone.end);
@@ -737,7 +737,7 @@ var THREE = require("three"),
 		this.size = [0, 0];
 
 		var o = this;
-		THREE.ImageUtils.loadTexture("/assets/circle.png", undefined, function(map) {
+		THREE.ImageUtils.loadTexture("./assets/circle.png", undefined, function(map) {
 			o.mat = new THREE.SpriteMaterial({
 						map: map,
 						color: 0xffffff,
@@ -868,25 +868,25 @@ var THREE = require("three"),
 		};
 	})();
 
-	// Î£ÏÕÇøÓòµãÊÕ¼¯Æ÷
+	// Î£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Õ¼ï¿½ï¿½ï¿½
 	function DangerZonePointCollector(domElement) {
-		this.points = []; // ´æ´¢ËùÓÐµã£¬²»Çå¿Õ
-		this.tempPoints = []; // ÁÙÊ±´æ´¢µ±Ç°ÕýÔÚÊÕ¼¯µÄÁ½¸öµã
+		this.points = []; // ï¿½æ´¢ï¿½ï¿½ï¿½Ðµã£¬ï¿½ï¿½ï¿½ï¿½ï¿½
+		this.tempPoints = []; // ï¿½ï¿½Ê±ï¿½æ´¢ï¿½ï¿½Ç°ï¿½ï¿½ï¿½ï¿½ï¿½Õ¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		this.domElement = domElement || window;
 		this.currentRiskLevel = 'low';
 
 		this.fromCamera = null;
 		this.size = [0, 0];
 
-		// ÏÈ´´½¨Ò»¸öÄ¬ÈÏ²ÄÖÊ
+		// ï¿½È´ï¿½ï¿½ï¿½Ò»ï¿½ï¿½Ä¬ï¿½Ï²ï¿½ï¿½ï¿½
 		this.mat = new THREE.SpriteMaterial({
 			color: 0xffffff,
 			fog: false
 		});
 
 		var o = this;
-		THREE.ImageUtils.loadTexture("/assets/circle.png", undefined, function(map) {
-			// ²ÄÖÊ¼ÓÔØÍê³Éºó¸üÐÂ
+		THREE.ImageUtils.loadTexture("./assets/circle.png", undefined, function(map) {
+			// ï¿½ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½Éºï¿½ï¿½ï¿½ï¿½
 			o.mat.map = map;
 			o.mat.needsUpdate = true;
 		});
@@ -911,7 +911,7 @@ var THREE = require("three"),
 	DangerZonePointCollector.prototype.push = function(x, y, point, startNew, riskLevel) {
 		var newPos = new THREE.Vector2(x, y);
 		
-		// ¼ì²éÊÇ·ñµã»÷ÔÚÏÖÓÐµãÉÏ£¨ÒÆ³ý¹¦ÄÜ£©
+		// ï¿½ï¿½ï¿½ï¿½Ç·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ðµï¿½ï¿½Ï£ï¿½ï¿½Æ³ï¿½ï¿½ï¿½ï¿½Ü£ï¿½
 		for (var i = 0; i < this.points.length ; i ++) {
 			if (newPos.distanceTo(this.points[i].screenPos) < 16.0) {
 				var thisPoint = this.points[i];
@@ -923,11 +923,11 @@ var THREE = require("three"),
 		}
 
 		if (point.x === 0.0 && point.y === 0.0 && point.z === 0.0)
-			return; // Ã»ÓÐµã»÷µ½µãÔÆ
+			return; // Ã»ï¿½Ðµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 
 		this.currentRiskLevel = riskLevel || 'low';
 		
-		// ÉèÖÃµãµÄID
+		// ï¿½ï¿½ï¿½Ãµï¿½ï¿½ID
 		if (this.points.length === 0)
 			point.id = 1;
 		else if (startNew) {
@@ -937,43 +937,43 @@ var THREE = require("three"),
 			point.id = this.points[this.points.length - 1].id;
 		}
 
-		// ÉèÖÃÎ£ÏÕÇøÓòÌØÓÐÊôÐÔ
+		// ï¿½ï¿½ï¿½ï¿½Î£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		point.sprite = null;
 		point.screenPos = newPos;
 		point.isDangerZone = true;
 		point.riskLevel = this.currentRiskLevel;
 		
-		// ¸ù¾Ý·çÏÕµÈ¼¶ÉèÖÃÑÕÉ«
+		// ï¿½ï¿½ï¿½Ý·ï¿½ï¿½ÕµÈ¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½É«
 		point.color = new THREE.Color();
 		switch(this.currentRiskLevel) {
 			case 'low':
-				point.color.setHex(0x28a745); // ÂÌÉ«
+				point.color.setHex(0x28a745); // ï¿½ï¿½É«
 				break;
 			case 'medium':
-				point.color.setHex(0xffc107); // »ÆÉ«
+				point.color.setHex(0xffc107); // ï¿½ï¿½É«
 				break;
 			case 'high':
-				point.color.setHex(0xdc3545); // ºìÉ«
+				point.color.setHex(0xdc3545); // ï¿½ï¿½É«
 				break;
 			default:
 				point.color.setHex(0x28a745);
 		}
 
-		// Ìí¼Óµ½×Üµã¼¯ºÏ£¨ÓÀ¾Ã±£´æ£¬²»Çå¿Õ£©
+		// ï¿½ï¿½Óµï¿½ï¿½Üµã¼¯ï¿½Ï£ï¿½ï¿½ï¿½ï¿½Ã±ï¿½ï¿½æ£¬ï¿½ï¿½ï¿½ï¿½Õ£ï¿½
 		this.points.push(point);
 		
-		// Ìí¼Óµ½ÁÙÊ±µã¼¯ºÏÓÃÓÚ´´½¨Î£ÏÕÇøÓò
+		// ï¿½ï¿½Óµï¿½ï¿½ï¿½Ê±ï¿½ã¼¯ï¿½ï¿½ï¿½ï¿½ï¿½Ú´ï¿½ï¿½ï¿½Î£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		this.tempPoints.push(point);
 
-		// Ã¿Á½¸öµã´´½¨Ò»¸öÎ£ÏÕÇøÓò
+		// Ã¿ï¿½ï¿½ï¿½ï¿½ï¿½ã´´ï¿½ï¿½Ò»ï¿½ï¿½Î£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		if (this.tempPoints.length >= 2) {
 			var p1 = this.tempPoints[0];
 			var p2 = this.tempPoints[1];
 			
-			// ´´½¨Î£ÏÕÇøÓò
+			// ï¿½ï¿½ï¿½ï¿½Î£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 			getDangerZoneController().add(p1, p2);
 			
-			// Ö»Çå¿ÕÁÙÊ±µã¼¯ºÏ£¬±£³Ö×Üµã¼¯ºÏ²»±ä
+			// Ö»ï¿½ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ã¼¯ï¿½Ï£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Üµã¼¯ï¿½Ï²ï¿½ï¿½ï¿½
 			this.tempPoints = [];
 		}
 
@@ -998,7 +998,7 @@ var THREE = require("three"),
 			var p = this.points[i];
 
 			if (!p.sprite) {
-				// ´´½¨´øÑÕÉ«µÄ¾«Áé£¬¾ÍÏñ²âÁ¿µãÒ»Ñù
+				// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½É«ï¿½Ä¾ï¿½ï¿½é£¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½
 				var spriteMaterial = new THREE.SpriteMaterial({
 							map: this.mat.map,
 							color: p.color,
@@ -1055,12 +1055,12 @@ var THREE = require("three"),
 	};
 
 	DangerZonePointCollector.prototype.removePointsForDangerZone = function(dangerZone) {
-		// ÕÒµ½ÊôÓÚÕâ¸öÎ£ÏÕÇøÓòµÄµã²¢É¾³ý
+		// ï¿½Òµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Äµã²¢É¾ï¿½ï¿½
 		var pointsToRemove = [];
 		
 		for (var i = 0; i < this.points.length; i++) {
 			var point = this.points[i];
-			// ¼ì²éµãÊÇ·ñÊôÓÚÒªÉ¾³ýµÄÎ£ÏÕÇøÓò
+			// ï¿½ï¿½ï¿½ï¿½ï¿½Ç·ï¿½ï¿½ï¿½ï¿½ï¿½ÒªÉ¾ï¿½ï¿½ï¿½ï¿½Î£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 			if (point.isDangerZone && 
 				((point.x === dangerZone.start.x && point.y === dangerZone.start.y && point.z === dangerZone.start.z) ||
 				 (point.x === dangerZone.end.x && point.y === dangerZone.end.y && point.z === dangerZone.end.z))) {
@@ -1068,7 +1068,7 @@ var THREE = require("three"),
 			}
 		}
 		
-		// ´ÓºóÍùÇ°É¾³ý£¬±ÜÃâË÷ÒýÎÊÌâ
+		// ï¿½Óºï¿½ï¿½ï¿½Ç°É¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		for (var j = pointsToRemove.length - 1; j >= 0; j--) {
 			var index = pointsToRemove[j];
 			if (this.points[index].sprite) {
@@ -1082,7 +1082,7 @@ var THREE = require("three"),
 
 	DangerZonePointCollector.prototype.reset = function() {
 		this.clearPoints();
-		this.tempPoints = []; // Í¬Ê±Çå¿ÕÁÙÊ±µã¼¯ºÏ
+		this.tempPoints = []; // Í¬Ê±ï¿½ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ã¼¯ï¿½ï¿½
 		needRefresh = true;
 	};
 
@@ -1742,7 +1742,7 @@ var THREE = require("three"),
 
 		$(document).on('plasio.dangerzone.remove', function(e) {
 			getDangerZoneController().remove(e.region);
-			// Í¬Ê±É¾³ý¶ÔÓ¦µÄµã
+			// Í¬Ê±É¾ï¿½ï¿½ï¿½ï¿½Ó¦ï¿½Äµï¿½
 			getDangerZonePointCollector().removePointsForDangerZone(e.region);
 		});
 
