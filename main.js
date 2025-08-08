@@ -120,8 +120,6 @@ ipcMain.handle('run-step2-process', (_evt) => {
 
     const inputPath = path.join(processDir, '1.las');
     const outputPath = path.join(processDir, '2.las');
-    // 注意：process_2 还会生成一个 'linedata.json' 文件在同一目录下
-
     console.log(`正在运行步骤 2: ${scriptPath} ${inputPath} ${outputPath}`);
 
     const child = execFile(
@@ -148,24 +146,7 @@ ipcMain.handle('run-step2-process', (_evt) => {
     });
 });
 
-// 处理器5: 读取属性信息文件 (linedata.json)
-ipcMain.handle('get-line-data', async () => {
-    const jsonPath = path.join(processDir, 'linedata.json');
-
-    if (!fs.existsSync(jsonPath)) {
-        return { success: false, message: '属性文件 (linedata.json) 不存在。' };
-    }
-
-    try {
-        const rawData = fs.readFileSync(jsonPath, 'utf8');
-        const data = JSON.parse(rawData);
-        return { success: true, data: data };
-    } catch (error) {
-        console.error(`读取或解析JSON文件失败: ${jsonPath}`, error);
-        return { success: false, message: `读取或解析JSON文件失败: ${error.message}` };
-    }
-});
-// 处理器6: 读取电塔属性信息文件 (tower.json)
+// 处理器5: 读取电塔属性信息文件 (tower.json)
 ipcMain.handle('get-tower-data', async () => {
     const jsonPath = path.join(processDir, 'tower.json');
 
@@ -183,6 +164,58 @@ ipcMain.handle('get-tower-data', async () => {
     }
 });
 
+// 处理器6: 执行工作流步骤三 (process_3.py)
+ipcMain.handle('run-step3-process', (_evt) => {
+    const scriptName = 'process_3.py';
+    const scriptPath = isDev
+        ? path.join(__dirname, scriptName)
+        : path.join(process.resourcesPath, 'app.asar.unpacked', scriptName);
+
+    const inputPath = path.join(processDir, '2.las');
+    const outputPath = path.join(processDir, '3.las');
+
+    console.log(`正在运行步骤 3: ${scriptPath} ${inputPath} ${outputPath}`);
+
+    const child = execFile(
+        pythonExe,
+        [scriptPath, inputPath, outputPath],
+        { env: { ...process.env, PYTHONHOME: '', PYTHONPATH: '' }, cwd: processDir, encoding: 'buffer' }
+    );
+    child.stdout.on('data', d => mainWindow.webContents.send('step3-log', iconv.decode(d, 'gbk')));
+    child.stderr.on('data', d => mainWindow.webContents.send('step3-log', `[错误] ${iconv.decode(d, 'gbk')}`));
+
+    child.on('close', code => {
+        if (code !== 0) {
+            mainWindow.webContents.send('step3-log', `[错误] 步骤 3 进程以代码 ${code} 退出`);
+            return;
+        }
+        if (!fs.existsSync(outputPath)) {
+            mainWindow.webContents.send('step3-log', `[错误] 步骤 3 未生成输出文件: ${outputPath}`);
+            return;
+        }
+
+        console.log(`步骤 3 完成。输出文件: ${outputPath}`);
+        mainWindow.webContents.send('step3-process-complete', outputPath);
+    });
+});
+
+// 处理器8: 读取电力线(跨段)属性信息文件 (span.json)
+ipcMain.handle('get-span-data', async () => {
+    const jsonPath = path.join(processDir, 'span.json');
+
+    if (!fs.existsSync(jsonPath)) {
+        return { success: false, message: '电力线属性文件 (span.json) 不存在。' };
+    }
+
+    try {
+        const rawData = fs.readFileSync(jsonPath, 'utf8');
+        const data = JSON.parse(rawData);
+        return { success: true, data: data };
+    } catch (error) {
+        console.error(`读取或解析span.json文件失败: ${jsonPath}`, error);
+        return { success: false, message: `读取或解析span.json文件失败: ${error.message}` };
+    }
+});
 /* ────────────── 生命周期 ────────────── */
 app.whenReady().then(createWindow);
 app.on('activate', () => {

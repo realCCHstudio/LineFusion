@@ -60,27 +60,40 @@ $(function() {
 
     const step1Btn = $('#run-step1-btn');
     const step2Btn = $('#run-step2-btn');
+    const step3Btn = $('#run-step3-btn');
     const step1Status = $('#step1-status');
     const step2Status = $('#step2-status');
+    const step3Status = $('#step3-status');
     const consoleOutput = $('#fit-console-output');
     const browseBtn = $('#browse');
     const propertiesContent = $('#properties-content');
 
     let workflowState = 'initial';
 
-    async function updatePropertiesModule() {
-        propertiesContent.html('<p class="text-muted">正在加载属性信息...</p>');
-        const result = await window.electronAPI.getLineData();
+    async function updateSpanPropertiesModule() {
+        propertiesContent.html('<p class="text-muted">正在加载电力线属性...</p>');
+        // 注意：我们现在调用 getSpanData
+        const result = await window.electronAPI.getSpanData();
         if (result.success && result.data) {
             const data = result.data;
             if (!Array.isArray(data) || data.length === 0) {
-                propertiesContent.html('<p class="text-muted">属性文件为空或格式不正确。</p>');
+                propertiesContent.html('<p class="text-muted">电力线属性文件为空。</p>');
                 return;
             }
+
+            // 定义表头中文映射
+            const headerMap = {
+                "line_name": "导线名称",
+                "line_id": "导线ID",
+                "span_id": "跨段ID",
+                "point_count": "点云数量",
+                "estimated_length_m": "估算长度(米)"
+            };
+
             let tableHtml = '<table class="table table-striped table-hover table-condensed">';
             tableHtml += '<thead><tr>';
             Object.keys(data[0]).forEach(key => {
-                tableHtml += `<th>${key}</th>`;
+                tableHtml += `<th>${headerMap[key] || key}</th>`;
             });
             tableHtml += '</tr></thead>';
             tableHtml += '<tbody>';
@@ -97,7 +110,7 @@ $(function() {
             tableHtml += '</tbody></table>';
             propertiesContent.html(tableHtml);
         } else {
-            propertiesContent.html(`<p class="text-muted">暂无电力线属性信息。请确保已成功运行所有处理步骤。</p>`);
+            propertiesContent.html(`<p class="text-muted">暂无电力线属性信息。</p>`);
         }
     }
 
@@ -178,9 +191,22 @@ $(function() {
             case 'step2_complete':
                 step1Btn.prop('disabled', true);
                 step2Btn.prop('disabled', true);
+                step3Btn.prop('disabled', false);
                 step2Status.text('电塔提取和分段完成！');
-                updatePropertiesModule();
+                step3Status.text('准备好进行电力线细提取。');
                 updateTowerPropertiesModule();
+                break;
+            case 'step3_running':
+                step3Btn.prop('disabled', true).find('.spinner').show();
+                step3Status.text('正在运行细提取和分根...');
+                break;
+            case 'step3_complete':
+                step1Btn.prop('disabled', true);
+                step2Btn.prop('disabled', true);
+                step3Btn.prop('disabled', true);
+                step3Status.text('电力线细提取和分根完成！');
+                updateTowerPropertiesModule(); // 重新加载，以防万一
+                updateSpanPropertiesModule(); // 加载最终的电力线信息
                 break;
         }
     }
@@ -246,6 +272,25 @@ $(function() {
         consoleOutput.append('--- 步骤 2 完成. 正在加载 `2.las`... ---\n');
         updateUI('step2_complete');
         loadFileInViewer(outputPath, '2.las');
+    });
+
+    step3Btn.on('click', () => {
+        updateUI('step3_running');
+        consoleOutput.append('\n--- 开始步骤 3: 电力线细提取和分根 ---\n');
+        window.electronAPI.runStep3();
+    });
+
+    window.electronAPI.onStep3Log((data) => {
+        // 步骤3的日志也输出到同一个控制台
+        consoleOutput.append(data);
+        consoleOutput.scrollTop(consoleOutput[0].scrollHeight);
+    });
+
+    window.electronAPI.onStep3Complete((outputPath) => {
+        console.log('步骤 3 完成, 输出路径:', outputPath);
+        consoleOutput.append('--- 步骤 3 完成. 正在加载 `3.las`... ---\n');
+        updateUI('step3_complete');
+        loadFileInViewer(outputPath, '3.las');
     });
 
     // ---- 新工作流逻辑的结束 ----

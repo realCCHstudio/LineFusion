@@ -115,7 +115,8 @@
       "node_modules/**/*",
       "preload.js",
       "process_1.py",
-      "process_2.py"
+      "process_2.py",
+      "process_3.py"
     ],
     "extraResources": [
       {
@@ -162,6 +163,7 @@
       "preload.js",
       "process_1.py",
       "process_2.py",
+      "process_3.py",
       "resources/python/**/*"
     ],
     "asar": true

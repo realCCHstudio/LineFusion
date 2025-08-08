@@ -1,16 +1,3 @@
-#!/usr/bin/env python3
-"""
-span_segmentation_visualizer.py — (V6.4, 更换聚类算法)
-====================================================================
-用基于“连通性”的自定义聚类算法替换DBSCAN，以解决稀疏电塔的识别问题。
-
-1.  **核心修改**:
-    - 替换 `get_tower_centers` 函数的内部实现。新算法不再使用DBSCAN，
-      而是通过广度优先搜索寻找点云中所有相互连通的部分，每个连通部分
-      即为一个塔簇。
-    - 这种方法不再依赖“局部密度”，只关心点是否在空间上“可达”，对
-      稀疏点云更友好。
-"""
 import numpy as np
 import open3d as o3d
 from scipy.spatial import cKDTree
@@ -18,7 +5,7 @@ import laspy
 from laspy import LasHeader, LasData, ExtraBytesParams
 import os
 import colorsys
-import sys # 新增：用于处理命令行参数
+import sys
 import json
 
 CONFIG = {

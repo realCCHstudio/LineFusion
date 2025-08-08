@@ -49,7 +49,8 @@ var paths = {
 
     // ===== [修改] 1. 在这里添加新文件的路径 =====
     pythonScript: 'process_1.py',
-    fitScript: 'process_2.py'
+    fitScript: 'process_2.py',
+    process3Script: 'process_3.py'
 };
 
 /**
@@ -182,7 +183,10 @@ gulp.task('fit-script', function() {
     return gulp.src(paths.fitScript)
         .pipe(gulp.dest(paths.build));
 });
-
+gulp.task('process3-script', function() {
+    return gulp.src(paths.process3Script)
+        .pipe(gulp.dest(paths.build));
+});
 // 构建客户端 JS
 gulp.task('scripts', function() {
     return browserify({
@@ -282,7 +286,8 @@ gulp.task('build',
         'docs',
         'images',
         'python',
-        'fit-script'
+        'fit-script',
+        'process3-script'
     )
 );
 
