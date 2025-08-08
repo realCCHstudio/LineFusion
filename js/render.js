@@ -1370,6 +1370,7 @@ require("binary-loader");
 				c.fov = currentFOV();
 				c.updateProjectionMatrix();
 			}, THREE.PerspectiveCamera);
+			needRefresh = true;
 		});
 
 		$(document).on("plasio.camera.perspective", function() {
@@ -1764,36 +1765,42 @@ require("binary-loader");
 			THREE.ImageUtils.loadTexture(colormap, undefined, function(tex) {
 				uniforms.map.value = tex;
 				uniforms.map.needsUpdate = true;
+				needRefresh = true;
 			});
 		});
 
 		$(document).on("plasio.colorsourceChanged", function() {
 			updateColorUniformsForSource(uniforms, currentColorSource());
+			needRefresh = true;
 		});
 
 		$(document).on("plasio.intensitysourceChanged", function() {
 			updateIntensityUniformsForSource(uniforms, currentIntensitySource());
+			needRefresh = true;
 		});
 
 		$(document).on("plasio.intensityClampChanged", function() {
 			if (oldBatcher !== null)
 				updateIntensityClampingForBatcher(uniforms, oldBatcher);
+			needRefresh = true;
 		});
 
 		$(document).on("plasio.colorClampChanged", function() {
 			updateColorClamping(uniforms);
+			needRefresh = true;
 		});
 
 		$(document).on("plasio.intensityBlendChanged", function() {
 			var f = currentIntensityBlend();
 			uniforms.intensityBlend.value = f / 100.0;
-
+			needRefresh = true;
 		});
 
 		$(document).on("plasio.pointSizeChanged", function() {
 			var f = currentPointSize();
 			getXYZRenderer().uniforms.pointSize.value = f;
 			uniforms.pointSize.value = f;
+			needRefresh = true;
 		});
 
 		$(document).on("plasio.maxColorComponent", function(e) {
@@ -1815,6 +1822,7 @@ require("binary-loader");
 			getXYZRenderer().uniforms.xyzScale.value =
 				new THREE.Vector3(1, 1, factor);
 			uniforms.xyzScale.value = new THREE.Vector3(1, 1, factor);
+			needRefresh = true;
 		});
 
 		$(document).on("plasio.classificationRangeChanged", function(e) {
