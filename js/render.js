@@ -189,6 +189,83 @@ require("binary-loader");
 		};
 	})();
 
+	function DangerZoneController() {
+		this.dangerZones = [];
+		this.scaleFactor = 100.0;
+		this.active = false; // 是否处于危险区域标记模式
+		this.currentRiskLevel = 'low'; // 当前风险等级
+	}
+
+// 继承自 RegionsController 的一些方法，如果需要的话
+	DangerZoneController.prototype = Object.create(RegionsController.prototype);
+	DangerZoneController.prototype.constructor = DangerZoneController;
+
+	DangerZoneController.prototype.setActive = function(isActive, riskLevel) {
+		this.active = isActive;
+		if (riskLevel) {
+			this.currentRiskLevel = riskLevel;
+		}
+	};
+
+	DangerZoneController.prototype.setRiskLevel = function(riskLevel) {
+		this.currentRiskLevel = riskLevel;
+	};
+
+	DangerZoneController.prototype.add = function(p1, p2) {
+		var color = new THREE.Color();
+		var riskColors = {
+			'low': 0x28a745,    // 绿色
+			'medium': 0xffc107, // 黄色
+			'high': 0xdc3545     // 红色
+		};
+		color.setHex(riskColors[this.currentRiskLevel] || 0x28a745);
+
+		var dangerZone = {
+			start: p1,
+			end: p2,
+			type: RegionsController.TypeRibbon, // 默认为条带类型
+			widthScale: 1, // 默认宽度
+			heightScale: 1, // 默认高度
+			color: color,
+			active: true, // 默认激活
+			riskLevel: this.currentRiskLevel // 记录风险等级
+		};
+
+		this.dangerZones.push(dangerZone);
+
+		$.event.trigger({
+			type: 'plasio.dangerzone.new',
+			region: dangerZone
+		});
+
+		needRefresh = true;
+	};
+
+	DangerZoneController.prototype.drawDangerZones = function(renderer, camera, target, forceClear) {
+		this.regions = this.dangerZones; // 借用父类的方法
+		this.drawRegions(renderer, camera, target, forceClear);
+	};
+
+	DangerZoneController.prototype.reset = function() {
+		this.dangerZones = [];
+		needRefresh = true;
+	};
+
+	DangerZoneController.prototype.remove = function(dz) {
+		this.dangerZones = _.without(this.dangerZones, dz);
+		needRefresh = true;
+	};
+
+// 单例模式访问函数
+	var getDangerZoneController = (function() {
+		var dzc = null;
+		return function() {
+			if (dzc === null)
+				dzc = new DangerZoneController();
+			return dzc;
+		};
+	})();
+
 	function CameraControl(container) {
 		this.container = container;
 		this.cameras = {};
@@ -599,7 +676,7 @@ require("binary-loader");
 		this.size = [0, 0];
 
 		var o = this;
-		THREE.ImageUtils.loadTexture("/assets/circle.png", undefined, function(map) {
+		THREE.ImageUtils.loadTexture("assets/circle.png", undefined, function(map) {
 			o.mat = new THREE.SpriteMaterial({
 				map: map,
 				color: 0xffffff,
@@ -727,6 +804,72 @@ require("binary-loader");
 			if (pc === null && renderer && renderer.domElement)
 				pc = new PointCollector(renderer.domElement);
 			return pc;
+		};
+	})();
+
+	function DangerZonePointCollector(domElement) {
+		PointCollector.apply(this, arguments);
+		this.tempPoints = []; // 用于创建单个危险区域的临时点
+	}
+	DangerZonePointCollector.prototype = Object.create(PointCollector.prototype);
+	DangerZonePointCollector.prototype.constructor = DangerZonePointCollector;
+
+	DangerZonePointCollector.prototype.push = function(x, y, p, isNew, riskLevel) {
+		if (p.x === 0.0 && p.y === 0.0 && p.z === 0.0)
+			return; // 没有点击到点云
+
+		PointCollector.prototype.push.apply(this, arguments); // 调用父类方法来添加点并显示
+
+		var addedPoint = this.points[this.points.length - 1];
+		addedPoint.isDangerZone = true; // 标记为危险区域点
+		addedPoint.riskLevel = riskLevel;
+
+		this.tempPoints.push(addedPoint);
+
+		if (this.tempPoints.length >= 2) {
+			var p1 = this.tempPoints[0];
+			var p2 = this.tempPoints[1];
+
+			getDangerZoneController().add(p1, p2);
+
+			// 创建后清空临时点，准备创建下一个
+			this.tempPoints = [];
+		}
+	};
+
+	DangerZonePointCollector.prototype.reset = function() {
+		this.clearPoints();
+		this.tempPoints = [];
+	};
+
+	DangerZonePointCollector.prototype.removePointsForDangerZone = function(dangerZone) {
+		// 这是一个复杂的函数，暂时可以忽略其内部实现，只需确保函数存在
+		var pointsToRemove = [];
+		this.points.forEach(function(point, i) {
+			// 这里的浮点数比较可能不精确，但在修复主流程时可暂时接受
+			if (point.isDangerZone &&
+				((point.x === dangerZone.start.x && point.y === dangerZone.start.y && point.z === dangerZone.start.z) ||
+					(point.x === dangerZone.end.x && point.y === dangerZone.end.y && point.z === dangerZone.end.z))) {
+				pointsToRemove.push(i);
+			}
+		});
+
+		// 从后往前删除，避免索引错乱
+		for (var i = pointsToRemove.length - 1; i >= 0; i--) {
+			var index = pointsToRemove[i];
+			this.orthoScene.remove(this.points[index].sprite);
+			this.points.splice(index, 1);
+		}
+		needRefresh = true;
+	};
+
+
+	var getDangerZonePointCollector = (function() {
+		var dzpc = null;
+		return function() {
+			if (dzpc === null && renderer && renderer.domElement)
+				dzpc = new DangerZonePointCollector(renderer.domElement);
+			return dzpc;
 		};
 	})();
 
@@ -1273,9 +1416,13 @@ require("binary-loader");
 				return;
 
 			var point = getXYZRenderer().pick(renderer, scene, getCameraControl().activeCamera, d.x, d.y);
-			getPointCollector().push(d.x, d.y, point, d.startNew);
+			if (d.isDangerZone) {
+				getDangerZonePointCollector().push(d.x, d.y, point, d.startNew, d.riskLevel);
+			} else {
+				getPointCollector().push(d.x, d.y, point, d.startNew);
+			}
 
-			console.log('Point added:', d.x, d.y, ' -> ', point);
+			console.log('Point added:', d.x, d.y, ' -> ', point, d.isDangerZone ? '(Danger Zone)' : '');
 		});
 
 		var scaleObjects = [];
@@ -1380,7 +1527,9 @@ require("binary-loader");
 
 		getCameraControl().update();
 		getPointCollector().update();
-
+		if (getDangerZonePointCollector()) {
+			getDangerZonePointCollector().update();
+		}
 		if (needRefresh) {
 			render();
 			needRefresh = false;
@@ -1444,11 +1593,16 @@ require("binary-loader");
 
 			// Render the regions as quads
 			getRegionsController().drawRegions(renderer, camera, target);
-
+			if (getDangerZoneController()) {
+				getDangerZoneController().drawDangerZones(renderer, camera, target);
+			}
 			// render collector lines
 			renderCollectorLines(renderer, camera, target);
 			getPointCollector().render(renderer, target);
-		};
+			if (getDangerZonePointCollector()) {
+				getDangerZonePointCollector().render(renderer, target);
+			}
+			};
 
 		if (needOverlay && toggleActivate) {
 			// there is an active overlay and it has been toggled, we need to render regions stuff to main area
@@ -1668,6 +1822,45 @@ require("binary-loader");
 			uniforms.klassRange.value = e.range;
 		});
 
+		$(document).on('plasio.dangerzone.toggle', function(e) {
+			if (e.index !== undefined) {
+				getDangerZoneController().toggle(e.index);
+			} else {
+				getDangerZoneController().setActive(e.active, e.riskLevel);
+			}
+		});
+
+		$(document).on('plasio.dangerzone.riskLevelChanged', function(e) {
+			getDangerZoneController().setRiskLevel(e.riskLevel);
+		});
+
+		$(document).on('plasio.dangerzone.reset', function() {
+			if (getDangerZoneController()) getDangerZoneController().reset();
+			if (getDangerZonePointCollector()) getDangerZonePointCollector().reset();
+		});
+
+		$(document).on('plasio.dangerzone.remove', function(e) {
+			getDangerZoneController().remove(e.region);
+			getDangerZonePointCollector().removePointsForDangerZone(e.region);
+		});
+
+		$(document).on('plasio.dangerzone.setRibbon', function(e) {
+			getDangerZoneController().setRibbon(e.index);
+		});
+
+		$(document).on('plasio.dangerzone.setAxisAligned', function(e) {
+			getDangerZoneController().setAxisAligned(e.index);
+		});
+
+		$(document).on('plasio.dangerzone.setWidth', function(e) {
+			getDangerZoneController().setWidth(e.index, e.width);
+		});
+
+		$(document).on('plasio.dangerzone.setHeight', function(e) {
+			getDangerZoneController().setHeight(e.index, e.height);
+		});
+
+
 		shaderMaterial.uniforms = uniforms;
 		shaderMaterial.attributes = attributes;
 
@@ -1872,4 +2065,5 @@ require("binary-loader");
 	};
 
 	w.ParticleSystemBatcher = ParticleSystemBatcher;
+	w.getDangerZoneController = getDangerZoneController;
 })(module.exports);

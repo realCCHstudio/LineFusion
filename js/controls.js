@@ -625,7 +625,6 @@ var withRefresh = require('./util').withRefresh;
     scope.RegionsBox = RegionsBox;
     scope.openGreyhoundPipelineButton = openGreyhoundPipelineButton;
 
-    // Σ�������ע�������
     // 修改现有的 DangerZoneControls 组件
     var DangerZoneControls = React.createClass({
         getInitialState: function() {
@@ -681,35 +680,52 @@ var withRefresh = require('./util').withRefresh;
         setRibbon: withRefresh(function(i) {
             this.state.regions[i].type = 1;
             this.setState({ regions: this.state.regions });
-            render.getDangerZoneController().setRibbon(i);
+            $.event.trigger({
+                type: 'plasio.dangerzone.setRibbon',
+                index: i
+            });
         }),
     
         // 设置危险区域为轴对称类型
         setAxisAligned: withRefresh(function(i) {
             this.state.regions[i].type = 2;
             this.setState({ regions: this.state.regions });
-            render.getDangerZoneController().setAxisAligned(i);
+            $.event.trigger({
+                type: 'plasio.dangerzone.setAxisAligned',
+                index: i
+            });
         }),
     
         // 设置危险区域宽度
         setWidth: withRefresh(function(i, w) {
             this.state.regions[i].widthScale = w;
             this.setState({ regions: this.state.regions });
-            render.getDangerZoneController().setWidth(i, w);
+            $.event.trigger({
+                type: 'plasio.dangerzone.setWidth',
+                index: i,
+                width: w
+            });
         }),
     
         // 设置危险区域高度
         setHeight: withRefresh(function(i, h) {
             this.state.regions[i].heightScale = h;
             this.setState({ regions: this.state.regions });
-            render.getDangerZoneController().setHeight(i, h);
+            $.event.trigger({
+                type: 'plasio.dangerzone.setHeight',
+                index: i,
+                height: h
+            });
         }),
     
         // 切换危险区域显示状态
         toggle: withRefresh(function(i) {
             this.state.regions[i].active = !this.state.regions[i].active;
             this.setState({ regions: this.state.regions });
-            render.getDangerZoneController().toggle(i);
+            $.event.trigger({
+                type: 'plasio.dangerzone.toggle',
+                index: i
+            });
         }),
     
         // 在DangerZoneControls的render方法中
