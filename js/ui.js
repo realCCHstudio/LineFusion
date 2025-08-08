@@ -3,23 +3,12 @@
 // ui.js
 // All UI stuff goes here
 //
-
 /* ---------- 提取电力线按钮处理 ---------- */
 function setupPowerlineHandlers() {
     const $btn    = $('#extract-powerline-btn');
+    $btn.prop('disabled', false);
     const $label  = $btn.find('.btn-text');
     const $status = $('#powerline-status');
-
-    $(document).on('plasio.load.started', () => {
-        $btn.prop('disabled', true);
-        $label.text('提取电力线');
-        $status.text('');
-    });
-
-    $(document).on('plasio.load.completed', () => {
-        $btn.prop('disabled', false);
-        $status.text('点击按钮选择文件并提取');
-    });
 
     $btn.on('click', async () => {
         try {
@@ -34,10 +23,7 @@ function setupPowerlineHandlers() {
 
             $label.text('提取完成');
             $status.text(`已保存到：${outputPath}`);
-            $btn.prop('disabled', false);
-
-            // 如需立刻加载生成结果，可在此触发 plasio.loadfiles.local
-            // $.event.trigger({ type:'plasio.loadfiles.local', files:[{path:outputPath}] });
+            alert('电力线提取完成，处理文件已保存：' + outputPath + '\n\n如需查看，请手动在“文件”面板里加载它。');
         } catch (err) {
             console.error(err);
             alert('提取失败：' + err.message);
@@ -47,6 +33,81 @@ function setupPowerlineHandlers() {
         }
     });
 }
+// // [新增] 特征拟合模块的事件处理
+// function setupFitFeatureHandlers() {
+//     const $fitBtn = $('#fit-features-btn');
+//     const $propsBtn = $('#view-properties-btn');
+//     const $console = $('#fit-console-output');
+//
+//     // 监听日志事件
+//     window.electronAPI.onFitProcessLog((_event, data) => {
+//         $console.append(data);
+//         $console.scrollTop($console[0].scrollHeight); // 自动滚动到底部
+//     });
+//
+//     // Fit 按钮点击事件
+//     $fitBtn.on('click', async () => {
+//
+//         $fitBtn.prop('disabled', true).text('正在拟合...');
+//         $propsBtn.hide();
+//         $console.text(''); // 清空控制台
+//
+//         try {
+//             const { lasPath, jsonPath } = await window.electronAPI.runFitProcess(AppState.currentFile.path);
+//
+//             alert('特征拟合完成！现在将加载最终结果。');
+//             $.event.trigger({
+//                 type: 'plasio.loadfiles.local',
+//                 files: [{ path: lasPath, name: 'fitted_result.las' }],
+//                 sourceType: 'fitted_las',
+//                 associatedJson: jsonPath // 将 json 路径传递过去
+//             });
+//
+//         } catch (err) {
+//             console.error('Fit process failed:', err);
+//             alert('特征拟合失败：' + err.message);
+//             $fitBtn.text('电塔提取和电力线特征');
+//         } finally {
+//             // 加载完成后再启用按钮
+//             // $fitBtn.prop('disabled', false);
+//         }
+//     });
+//
+//     // 查看属性按钮点击事件
+//     $propsBtn.on('click', async () => {
+//         if (!AppState.jsonPath) {
+//             alert('未找到属性文件！');
+//             return;
+//         }
+//
+//         try {
+//             const jsonData = await window.electronAPI.getJsonData(AppState.jsonPath);
+//             const $modalBody = $('#propertiesModalBody');
+//
+//             // 生成表格
+//             let table = '<table class="table table-bordered table-striped"><thead><tr>';
+//             const headers = Object.keys(jsonData[0] || {});
+//             headers.forEach(h => table += `<th>${h}</th>`);
+//             table += '</tr></thead><tbody>';
+//
+//             jsonData.forEach(row => {
+//                 table += '<tr>';
+//                 headers.forEach(h => table += `<td>${row[h]}</td>`);
+//                 table += '</tr>';
+//             });
+//             table += '</tbody></table>';
+//
+//             $modalBody.html(table);
+//             $('#propertiesModal').modal('show');
+//         } catch (err) {
+//             console.error('Failed to get/show JSON data:', err);
+//             alert('无法显示属性信息：' + err.message);
+//         }
+//     });
+// }
+
+
+
 
 var Promise = require("bluebird"),
     $ = require('jquery'),
@@ -183,7 +244,7 @@ require("bootstrap");
         // TODO: Evaluate if its a good idea to have plane based projection
         setupKeyboardHooks();
         setupProgressHandlers();
-        setupFileOpenHandlers();
+        //setupFileOpenHandlers();
         setupSliders();
         setupComboBoxActions();
         setupCameraActions();
@@ -370,13 +431,34 @@ require("bootstrap");
         //
         // Actions to trigger file loading
         //
-        $(document).on("plasio.loadfiles.local", function(e) {
-            cancellableLoad(getBinaryLocal, e.files, e.name);
-        });
-
+        // --- [工作流修改] 禁用旧的文件加载事件，因为 client.js 会接管 ---
+        // $(document).on("plasio.loadfiles.local", function(e) {
+        //     // [修改] 更新应用状态
+        //     AppState.currentFile = {
+        //         path: e.files[0].path,
+        //         type: e.sourceType || 'original' // 如果没有指定类型，则为原始文件
+        //     };
+        //
+        //     // 如果是拟合后的文件，记录 JSON 路径
+        //     if (e.sourceType === 'fitted_las') {
+        //         AppState.jsonPath = e.associatedJson;
+        //     } else {
+        //         AppState.jsonPath = null;
+        //     }
+        //
+        //     cancellableLoad(getBinaryLocal, e.files, e.name);
+        // });
+        // [工作流修改] 重新启用此事件监听器，但移除所有对 AppState 的引用。
+        // 保留 cancellableLoad 调用，这是启动文件加载和渲染的关键。
         $(document).on("plasio.loadfiles.remote", function(e) {
             cancellableLoad(getBinary, [e.url], e.name);
         });
+        // $(document).on("plasio.loadfiles.remote", function(e) {
+        //     AppState.currentFile = { path: e.url, type: 'original' };
+        //     AppState.jsonPath = null;
+        //
+        //     cancellableLoad(getBinary, [e.url], e.name);
+        // });
 
         $(document).on("plasio.loadfiles.greyhound", function(e) {
             cancellableLoad(getGreyhound, e.comps, "Greyhound Pipeline");
@@ -410,7 +492,10 @@ require("bootstrap");
                 message: e.message
             });
         });
+        $(document).on("plasio.load.completed", function(e) {
+            console.log(e.batches);
 
+        });
         var cleanup = function() {
             $.event.trigger({
                 type: 'plasio.progress.end'
@@ -649,27 +734,27 @@ require("bootstrap");
         });
     };
 
-    var setupFileOpenHandlers = function() {
-        $("#browseCancel button").on("click", withRefresh(function() {
-            $.event.trigger({ type: "plasio.load.cancel" });
-        }));
-
-        $(".btn-file").on("click", function(e) {
-            e.preventDefault();
-            $("#filebrowser").click();
-        });
-
-        $(document).on('change', '#filebrowser', withRefresh(async function (e) {
-            e.preventDefault();
-            var input = $(this);
-            var files = input.get(0).files;
-            $.event.trigger({
-                type: "plasio.loadfiles.local",
-                files: toArray(files),
-                name: files.length === 1 ? files[0].name : 'Multiple Files'
-            });
-        }));
-    };
+    // var setupFileOpenHandlers = function() {
+    //     $("#browseCancel button").on("click", withRefresh(function() {
+    //         $.event.trigger({ type: "plasio.load.cancel" });
+    //     }));
+    //
+    //     $(".btn-file").on("click", function(e) {
+    //         e.preventDefault();
+    //         $("#filebrowser").click();
+    //     });
+    //
+    //     $(document).on('change', '#filebrowser', withRefresh(async function (e) {
+    //         e.preventDefault();
+    //         var input = $(this);
+    //         var files = input.get(0).files;
+    //         $.event.trigger({
+    //             type: "plasio.loadfiles.local",
+    //             files: toArray(files),
+    //             name: files.length === 1 ? files[0].name : 'Multiple Files'
+    //         });
+    //     }));
+    // };
 
     var cancellableLoad = function(fDataLoader, files, name) {
         //  fDataLoader should be a function that when called returns a promise which

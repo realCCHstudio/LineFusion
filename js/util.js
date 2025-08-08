@@ -13,10 +13,6 @@ var m = require('mori');
 		// return f wrapped around with a call to renderer.needRefresh
 		return function() {
 			var r = f.apply(this, arguments);
-			$.event.trigger({
-				type: 'plasio.renderer.needRefresh'
-			});
-
 			return r;
 		};
 	};

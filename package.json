@@ -99,6 +99,7 @@
   },
   "dependencies": {
     "electron-log": "^5.0.1",
+    "iconv-lite": "^0.6.3",
     "puppeteer": "^24.3.0"
   },
   "build": {
@@ -113,15 +114,21 @@
       "package.json",
       "node_modules/**/*",
       "preload.js",
-      "lasprocess.py"
+      "lasprocess.py",
+      "fit.py"
     ],
     "extraResources": [
       {
         "from": "build/",
         "to": "build",
-        "filter": ["**/*"]
+        "filter": [
+          "**/*"
+        ]
       },
-      { "from": "resources/python", "to": "python" }
+      {
+        "from": "resources/python",
+        "to": "python"
+      }
     ],
     "win": {
       "target": [
@@ -154,6 +161,7 @@
     "asarUnpack": [
       "preload.js",
       "lasprocess.py",
+      "fit.py",
       "resources/python/**/*"
     ],
     "asar": true

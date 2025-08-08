@@ -6,8 +6,8 @@ var THREE = require("three"),
 	$ = require('jquery'),
 	_ = require('lodash');
 
-	require("trackball-controls");
-	require("binary-loader");
+require("trackball-controls");
+require("binary-loader");
 
 (function(w) {
 	"use strict";
@@ -189,144 +189,6 @@ var THREE = require("three"),
 		};
 	})();
 
-	// Σ�����������
-	function DangerZoneController() {
-		this.dangerZones = [];
-		this.isActive = false;
-		this.currentRiskLevel = 'low';
-		this.scaleFactor = 100.0;
-	}
-
-	DangerZoneController.prototype.setActive = function(active, riskLevel) {
-		this.isActive = active;
-		this.currentRiskLevel = riskLevel || 'low';
-	};
-
-	DangerZoneController.prototype.setRiskLevel = function(riskLevel) {
-		this.currentRiskLevel = riskLevel;
-	};
-
-	DangerZoneController.prototype.add = function(p1, p2) {
-		if (!this.isActive) return;
-		
-		var riskColors = {
-			'low': new THREE.Color(0x28a745),    // ��ɫ
-			'medium': new THREE.Color(0xffc107), // ��ɫ
-			'high': new THREE.Color(0xdc3545)    // ��ɫ
-		};
-		
-		var dangerZone = {
-			start: p1,
-			end: p2,
-			riskLevel: this.currentRiskLevel,
-			color: riskColors[this.currentRiskLevel],
-			type: 1, // Ĭ��Ϊ��������
-			widthScale: 3,
-			heightScale: 3,
-			active: true,
-			isDangerZone: true
-		};
-		
-		console.log('Adding new danger zone with risk level:', this.currentRiskLevel);
-		
-		this.dangerZones.push(dangerZone);
-		
-		$.event.trigger({
-			type: 'plasio.dangerzone.new',
-			region: dangerZone
-		});
-		
-		needRefresh = true;
-	};
-
-	DangerZoneController.prototype.remove = function(dangerZone) {
-		this.dangerZones = _.without(this.dangerZones, dangerZone);
-		needRefresh = true;
-	};
-
-	DangerZoneController.prototype.reset = function() {
-		this.dangerZones = [];
-		needRefresh = true;
-	};
-
-	DangerZoneController.prototype.setRibbon = function(index) {
-		if (this.dangerZones[index]) {
-			this.dangerZones[index].type = RegionsController.TypeRibbon;
-			needRefresh = true;
-		}
-	};
-
-	DangerZoneController.prototype.setAxisAligned = function(index) {
-		if (this.dangerZones[index]) {
-			this.dangerZones[index].type = RegionsController.TypeAA;
-			needRefresh = true;
-		}
-	};
-
-	DangerZoneController.prototype.setWidth = function(index, width) {
-		if (this.dangerZones[index]) {
-			this.dangerZones[index].widthScale = width;
-			needRefresh = true;
-		}
-	};
-
-	DangerZoneController.prototype.setHeight = function(index, height) {
-		if (this.dangerZones[index]) {
-			this.dangerZones[index].heightScale = height;
-			needRefresh = true;
-		}
-	};
-
-	DangerZoneController.prototype.toggle = function(index) {
-		if (this.dangerZones[index]) {
-			this.dangerZones[index].active = !this.dangerZones[index].active;
-			needRefresh = true;
-		}
-	};
-
-	DangerZoneController.prototype.drawDangerZones = function(renderer, camera, target, forceClear) {
-		var geom = new THREE.CubeGeometry(1, 1, 1);
-		var v = new THREE.Vector3();
-		var vmid = new THREE.Vector3();
-		var o = this;
-		
-		this.dangerZones.forEach(function(zone) {
-			if (!zone.active) return; // ֻ��Ⱦ�����Σ������
-			
-			var scene = new THREE.Scene();
-			var mat = new THREE.MeshBasicMaterial({ 
-				color: zone.color.getHex(), 
-				transparent: true, 
-				opacity: 0.6
-			});
-			var m = new THREE.Mesh(geom, mat);
-			
-			v.copy(zone.end).sub(zone.start);
-			vmid.copy(v).multiplyScalar(0.5);
-			
-			if (zone.type === 2) { // ��Գ�����
-				m.position.copy(zone.start).add(vmid);
-				m.scale.copy(v);
-			} else { // ��������
-				m.position.copy(zone.start).add(vmid);
-				m.scale.set(zone.widthScale * o.scaleFactor, zone.heightScale * o.scaleFactor, v.length());
-				m.lookAt(zone.end);
-			}
-			
-			scene.add(m);
-			renderer.render(scene, camera, target, forceClear);
-		});
-	};
-
-	var getDangerZoneController = (function() {
-		var dzc = null;
-		return function() {
-			if (dzc === null)
-				dzc = new DangerZoneController();
-			return dzc;
-		};
-	})();
-
 	function CameraControl(container) {
 		this.container = container;
 		this.cameras = {};
@@ -442,9 +304,9 @@ var THREE = require("three"),
 		var planes = c.planes;
 
 		var left = planes[0],
-		right = planes[1],
-		top = planes[2],
-		bottom = planes[3];
+			right = planes[1],
+			top = planes[2],
+			bottom = planes[3];
 
 		c.left = left * cnt.__zoomLevel;
 		c.right = right * cnt.__zoomLevel;
@@ -452,8 +314,8 @@ var THREE = require("three"),
 		c.bottom = bottom * cnt.__zoomLevel;
 
 		var aspect = c.viewportWidth / c.viewportHeight;
-			c.left *= aspect;
-			c.right *= aspect;
+		c.left *= aspect;
+		c.right *= aspect;
 
 		c.updateProjectionMatrix();
 	};
@@ -737,12 +599,12 @@ var THREE = require("three"),
 		this.size = [0, 0];
 
 		var o = this;
-		THREE.ImageUtils.loadTexture("./assets/circle.png", undefined, function(map) {
+		THREE.ImageUtils.loadTexture("/assets/circle.png", undefined, function(map) {
 			o.mat = new THREE.SpriteMaterial({
-						map: map,
-						color: 0xffffff,
-						fog: false,
-					});
+				map: map,
+				color: 0xffffff,
+				fog: false,
+			});
 		});
 
 		this._sprites = [];
@@ -834,7 +696,7 @@ var THREE = require("three"),
 
 		var frustum = new THREE.Frustum();
 		frustum.setFromMatrix( new THREE.Matrix4().multiplyMatrices(this.fromCamera.projectionMatrix,
-																	this.fromCamera.matrixWorldInverse ) );
+			this.fromCamera.matrixWorldInverse ) );
 
 		for (var i = 0, il = this.points.length ; i < il ; i ++) {
 			var p = this.points[i];
@@ -865,234 +727,6 @@ var THREE = require("three"),
 			if (pc === null && renderer && renderer.domElement)
 				pc = new PointCollector(renderer.domElement);
 			return pc;
-		};
-	})();
-
-	// Σ��������ռ���
-	function DangerZonePointCollector(domElement) {
-		this.points = []; // �洢���е㣬�����
-		this.tempPoints = []; // ��ʱ�洢��ǰ�����ռ���������
-		this.domElement = domElement || window;
-		this.currentRiskLevel = 'low';
-
-		this.fromCamera = null;
-		this.size = [0, 0];
-
-		// �ȴ���һ��Ĭ�ϲ���
-		this.mat = new THREE.SpriteMaterial({
-			color: 0xffffff,
-			fog: false
-		});
-
-		var o = this;
-		THREE.ImageUtils.loadTexture("./assets/circle.png", undefined, function(map) {
-			// ���ʼ�����ɺ����
-			o.mat.map = map;
-			o.mat.needsUpdate = true;
-		});
-
-		this._sprites = [];
-		this.orthoScene = new THREE.Scene();
-		this.orthoCamera = new THREE.OrthographicCamera(-1, 1.0, 1.0, -1.0, 1, 10);
-		this.orthoCamera.position.z = 10;
-	}
-
-	DangerZonePointCollector.prototype._2dProj = function(p, proj) {
-		proj = proj || (new THREE.Projector());
-		var ndc = p.clone();
-		proj.projectVector(ndc, this.fromCamera);
-
-		var screen = new THREE.Vector2(this.size[0] * (ndc.x + 1) / 2, this.size[1] - this.size[1] * (ndc.y + 1) / 2);
-		var ortho = new THREE.Vector3(ndc.x * this.size[0] / 2, ndc.y * this.size[1] / 2, 1.0);
-
-		return [screen, ortho];
-	};
-
-	DangerZonePointCollector.prototype.push = function(x, y, point, startNew, riskLevel) {
-		var newPos = new THREE.Vector2(x, y);
-		
-		// ����Ƿ��������е��ϣ��Ƴ����ܣ�
-		for (var i = 0; i < this.points.length ; i ++) {
-			if (newPos.distanceTo(this.points[i].screenPos) < 16.0) {
-				var thisPoint = this.points[i];
-				this.orthoScene.remove(this.points[i].sprite);
-				this.points.splice(i, 1);
-				needRefresh = true;
-				return;
-			}
-		}
-
-		if (point.x === 0.0 && point.y === 0.0 && point.z === 0.0)
-			return; // û�е��������
-
-		this.currentRiskLevel = riskLevel || 'low';
-		
-		// ���õ��ID
-		if (this.points.length === 0)
-			point.id = 1;
-		else if (startNew) {
-			point.id = this.points[this.points.length - 1].id + 1;
-		}
-		else {
-			point.id = this.points[this.points.length - 1].id;
-		}
-
-		// ����Σ��������������
-		point.sprite = null;
-		point.screenPos = newPos;
-		point.isDangerZone = true;
-		point.riskLevel = this.currentRiskLevel;
-		
-		// ���ݷ��յȼ�������ɫ
-		point.color = new THREE.Color();
-		switch(this.currentRiskLevel) {
-			case 'low':
-				point.color.setHex(0x28a745); // ��ɫ
-				break;
-			case 'medium':
-				point.color.setHex(0xffc107); // ��ɫ
-				break;
-			case 'high':
-				point.color.setHex(0xdc3545); // ��ɫ
-				break;
-			default:
-				point.color.setHex(0x28a745);
-		}
-
-		// ��ӵ��ܵ㼯�ϣ����ñ��棬����գ�
-		this.points.push(point);
-		
-		// ��ӵ���ʱ�㼯�����ڴ���Σ������
-		this.tempPoints.push(point);
-
-		// ÿ�����㴴��һ��Σ������
-		if (this.tempPoints.length >= 2) {
-			var p1 = this.tempPoints[0];
-			var p2 = this.tempPoints[1];
-			
-			// ����Σ������
-			getDangerZoneController().add(p1, p2);
-			
-			// ֻ�����ʱ�㼯�ϣ������ܵ㼯�ϲ���
-			this.tempPoints = [];
-		}
-
-		needRefresh = true;
-	};
-
-	DangerZonePointCollector.prototype._updateSpritePositions = function() {
-		var width = this.size[0];
-		var height = this.size[1];
-
-		var proj = new THREE.Projector();
-
-		this.fromCamera.updateMatrix();
-		this.fromCamera.updateMatrixWorld();
-		this.fromCamera.matrixWorldInverse.getInverse( this.fromCamera.matrixWorld );
-
-		var frustum = new THREE.Frustum();
-		frustum.setFromMatrix( new THREE.Matrix4().multiplyMatrices(this.fromCamera.projectionMatrix,
-																	this.fromCamera.matrixWorldInverse ) );
-
-		for (var i = 0, il = this.points.length ; i < il ; i ++) {
-			var p = this.points[i];
-
-			if (!p.sprite) {
-				// ��������ɫ�ľ��飬���������һ��
-				var spriteMaterial = new THREE.SpriteMaterial({
-							map: this.mat.map,
-							color: p.color,
-							fog: false
-						});
-				p.sprite = new THREE.Sprite(spriteMaterial);
-				p.sprite.scale.set(16, 16, 1);
-				this.orthoScene.add(p.sprite);
-			}
-
-			var ps = this._2dProj(p, proj);
-			var ndc = ps[1];
-			p.sprite.position.set(ndc.x, ndc.y, ndc.z);
-			p.screenPos = ps[0];
-
-			p.sprite.visible = frustum.containsPoint(p);
-		}
-	};
-
-	DangerZonePointCollector.prototype.update = function() {
-		var $e = $(this.domElement);
-		var width = $e.width(),
-			height = $e.height();
-
-		var ac = getCameraControl().activeCamera;
-
-		if (this.fromCamera != ac ||
-			width !== this.size[0] || height !== this.size[1]) {
-			this.size = [width, height];
-			this.fromCamera = ac;
-
-			this.orthoCamera.left = -width / 2;
-			this.orthoCamera.right = width / 2;
-			this.orthoCamera.top = height / 2;
-			this.orthoCamera.bottom = -height / 2;
-
-			this.orthoCamera.updateProjectionMatrix();
-			this._updateSpritePositions();
-
-			needRefresh = true;
-		}
-	};
-
-	DangerZonePointCollector.prototype.render = function(renderer, target, forceClear) {
-		this._updateSpritePositions();
-		renderer.render(this.orthoScene, this.orthoCamera, target, forceClear);
-	};
-
-	DangerZonePointCollector.prototype.clearPoints = function() {
-		for (var i = 0 ; i < this.points.length ; i ++) {
-			this.orthoScene.remove(this.points[i].sprite);
-		}
-		this.points = [];
-	};
-
-	DangerZonePointCollector.prototype.removePointsForDangerZone = function(dangerZone) {
-		// �ҵ��������Σ������ĵ㲢ɾ��
-		var pointsToRemove = [];
-		
-		for (var i = 0; i < this.points.length; i++) {
-			var point = this.points[i];
-			// �����Ƿ�����Ҫɾ����Σ������
-			if (point.isDangerZone && 
-				((point.x === dangerZone.start.x && point.y === dangerZone.start.y && point.z === dangerZone.start.z) ||
-				 (point.x === dangerZone.end.x && point.y === dangerZone.end.y && point.z === dangerZone.end.z))) {
-				pointsToRemove.push(i);
-			}
-		}
-		
-		// �Ӻ���ǰɾ����������������
-		for (var j = pointsToRemove.length - 1; j >= 0; j--) {
-			var index = pointsToRemove[j];
-			if (this.points[index].sprite) {
-				this.orthoScene.remove(this.points[index].sprite);
-			}
-			this.points.splice(index, 1);
-		}
-		
-		needRefresh = true;
-	};
-
-	DangerZonePointCollector.prototype.reset = function() {
-		this.clearPoints();
-		this.tempPoints = []; // ͬʱ�����ʱ�㼯��
-		needRefresh = true;
-	};
-
-	var getDangerZonePointCollector = (function() {
-		var dzpc = null;
-
-		return function() {
-			if (dzpc === null && renderer && renderer.domElement)
-				dzpc = new DangerZonePointCollector(renderer.domElement);
-			return dzpc;
 		};
 	})();
 
@@ -1202,21 +836,21 @@ var THREE = require("three"),
 				cb(m[0], m[1]);
 			}, 0);
 
-			if (this.inprogress[url]) {
-				// this download is in progress right now, so we'd wait till its done and then invoke user's callback
-				//
-				return this.inprogress[url].push(cb);
-			}
+		if (this.inprogress[url]) {
+			// this download is in progress right now, so we'd wait till its done and then invoke user's callback
+			//
+			return this.inprogress[url].push(cb);
+		}
 
-			// this URL is neither loaded nor has it been queued, queue it
-			this.inprogress[url] = [cb];
+		// this URL is neither loaded nor has it been queued, queue it
+		this.inprogress[url] = [cb];
 
-			$.event.trigger({
-				type: 'plasio.progress.start'
-			});
+		$.event.trigger({
+			type: 'plasio.progress.start'
+		});
 
-			var loader = new THREE.BinaryLoader();
-			loader.load(url, function(geometry, materials) {
+		var loader = new THREE.BinaryLoader();
+		loader.load(url, function(geometry, materials) {
 				console.log('Done loading object');
 
 				$.event.trigger({
@@ -1364,10 +998,6 @@ var THREE = require("three"),
 		getRegionsController().add(p1, p2, color);
 	};
 
-	w.createNewDangerZone = function(p1, p2) {
-		getDangerZoneController().add(p1, p2);
-	};
-
 	function removeBatcher(b) {
 		// if the provided batcher is an array, remove all elements from the scene
 		if( Object.prototype.toString.call(b) === '[object Array]' ) {
@@ -1402,18 +1032,18 @@ var THREE = require("three"),
 		for(var i in b) {
 			if (mx === null) mx = b[i].mx.clone();
 			else mx.set(Math.max(mx.x, b[i].mx.x),
-						Math.max(mx.y, b[i].mx.y),
-						Math.max(mx.z, b[i].mx.z));
+				Math.max(mx.y, b[i].mx.y),
+				Math.max(mx.z, b[i].mx.z));
 
 			if (mn === null) mn = b[i].mn.clone();
 			else mn.set(Math.min(mn.x, b[i].mn.x),
-						Math.min(mn.y, b[i].mn.y),
-						Math.min(mn.z, b[i].mn.z));
+				Math.min(mn.y, b[i].mn.y),
+				Math.min(mn.z, b[i].mn.z));
 
 			if (cg === null) cg = b[i].cg.clone();
 			else mn.set((cg.x * i + b[i].cg.x) / (i+1),
-						(cg.y * i + b[i].cg.y) / (i+1),
-						(cg.z * i + b[i].cg.z) / (i+1));
+				(cg.y * i + b[i].cg.y) / (i+1),
+				(cg.z * i + b[i].cg.z) / (i+1));
 		}
 
 		return [mx, mn, cg, b[0].scale];
@@ -1531,7 +1161,7 @@ var THREE = require("three"),
 
 		// Setup inundation plane stuff
 		getInundationPlane().setDimensions([(mins.z - cg.z) * scale.z - range[2] * 0.1, (maxs.z - cg.z) * scale.z + range[2] * 0.1],
-										   range[0]/2, range[1]/2);
+			range[0]/2, range[1]/2);
 		getInundationPlane().place(currentInundationLevel());
 
 	};
@@ -1637,15 +1267,15 @@ var THREE = require("three"),
 		});
 
 		$(document).on('plasio.mensuration.addPoint', function(d) {
+			// Don't allow addition of mensuration points if we're in toggle mode and
+			// have some active region (we're seeing clipped area)
+			if (toggleActivate && _.some(getRegionsController().regions, 'active'))
+				return;
+
 			var point = getXYZRenderer().pick(renderer, scene, getCameraControl().activeCamera, d.x, d.y);
-			
-			if (d.isDangerZone) {
-				getDangerZonePointCollector().push(d.x, d.y, point, d.startNew, d.riskLevel);
-			} else {
-				getPointCollector().push(d.x, d.y, point, d.startNew);
-			}
-			
-			console.log('Point added:', d.x, d.y, ' -> ', point, d.isDangerZone ? '(Danger Zone)' : '');
+			getPointCollector().push(d.x, d.y, point, d.startNew);
+
+			console.log('Point added:', d.x, d.y, ' -> ', point);
 		});
 
 		var scaleObjects = [];
@@ -1724,51 +1354,6 @@ var THREE = require("three"),
 			var o = currentInundationOpacity();
 			getInundationPlane().setOpacity(o/100.0);
 		});
-
-		$(document).on('plasio.dangerzone.toggle', function(e) {
-			getDangerZoneController().setActive(e.active, e.riskLevel);
-		});
-
-		$(document).on('plasio.dangerzone.riskLevelChanged', function(e) {
-			getDangerZoneController().setRiskLevel(e.riskLevel);
-		});
-
-		$(document).on('plasio.dangerzone.reset', function() {
-			getDangerZoneController().reset();
-			if (getDangerZonePointCollector()) {
-				getDangerZonePointCollector().reset();
-			}
-		});
-
-		$(document).on('plasio.dangerzone.remove', function(e) {
-			getDangerZoneController().remove(e.region);
-			// ͬʱɾ����Ӧ�ĵ�
-			getDangerZonePointCollector().removePointsForDangerZone(e.region);
-		});
-
-		$(document).on('plasio.dangerzone.setRibbon', function(e) {
-			getDangerZoneController().setRibbon(e.index);
-		});
-
-		$(document).on('plasio.dangerzone.setAxisAligned', function(e) {
-			getDangerZoneController().setAxisAligned(e.index);
-		});
-
-		$(document).on('plasio.dangerzone.setWidth', function(e) {
-			getDangerZoneController().setWidth(e.index, e.width);
-		});
-
-		$(document).on('plasio.dangerzone.setHeight', function(e) {
-			getDangerZoneController().setHeight(e.index, e.height);
-		});
-
-		$(document).on('plasio.dangerzone.toggle', function(e) {
-			if (e.index !== undefined) {
-				getDangerZoneController().toggle(e.index);
-			} else {
-				getDangerZoneController().setActive(e.active, e.riskLevel);
-			}
-		});
 	}
 
 	function onWindowResize() {
@@ -1795,9 +1380,6 @@ var THREE = require("three"),
 
 		getCameraControl().update();
 		getPointCollector().update();
-		if (getDangerZonePointCollector()) {
-			getDangerZonePointCollector().update();
-		}
 
 		if (needRefresh) {
 			render();
@@ -1863,13 +1445,9 @@ var THREE = require("three"),
 			// Render the regions as quads
 			getRegionsController().drawRegions(renderer, camera, target);
 
-			// Render the danger zones
-			getDangerZoneController().drawDangerZones(renderer, camera, target);
-
 			// render collector lines
 			renderCollectorLines(renderer, camera, target);
 			getPointCollector().render(renderer, target);
-			getDangerZonePointCollector().render(renderer, target);
 		};
 
 		if (needOverlay && toggleActivate) {
@@ -1954,7 +1532,7 @@ var THREE = require("three"),
 		uniforms.colorClampHigher.value = Math.max(range[1], range[0] + 0.001);
 
 		console.log(uniforms.colorClampLower.value,
-					uniforms.colorClampHigher.value);
+			uniforms.colorClampHigher.value);
 	}
 
 	var shaderMaterial = null;
@@ -2079,9 +1657,9 @@ var THREE = require("three"),
 		});
 
 		$(document).on("plasio.scaleChanged", function(e) {
-            var factor = currentZScale();
+			var factor = currentZScale();
 			getXYZRenderer().uniforms.xyzScale.value =
-                    new THREE.Vector3(1, 1, factor);
+				new THREE.Vector3(1, 1, factor);
 			uniforms.xyzScale.value = new THREE.Vector3(1, 1, factor);
 		});
 
@@ -2136,8 +1714,8 @@ var THREE = require("three"),
 		var klass = null;
 
 		this.corrective = new THREE.Vector3(lasBuffer.mins[0],
-											lasBuffer.mins[1],
-											lasBuffer.mins[2]);
+			lasBuffer.mins[1],
+			lasBuffer.mins[2]);
 
 		for ( var i = 0; i < count; i ++) {
 			var p = lasBuffer.getPoint(i);
@@ -2151,22 +1729,22 @@ var THREE = require("three"),
 				cg = new THREE.Vector3(x, y, z);
 			else
 				cg.set((cg.x * i + x) / (i+1),
-					   (cg.y * i + y) / (i+1),
-					   (cg.z * i + z) / (i+1));
+					(cg.y * i + y) / (i+1),
+					(cg.z * i + z) / (i+1));
 
 			if (mx === null)
 				mx = new THREE.Vector3(x, y, z);
 			else
 				mx.set(Math.max(mx.x, x),
-					   Math.max(mx.y, y),
-					   Math.max(mx.z, z));
+					Math.max(mx.y, y),
+					Math.max(mx.z, z));
 
 			if (mn === null)
 				mn = new THREE.Vector3(x, y, z);
 			else
 				mn.set(Math.min(mn.x, x),
-					   Math.min(mn.y, y),
-					   Math.min(mn.z, z));
+					Math.min(mn.y, y),
+					Math.min(mn.z, z));
 
 			// get the color component out
 			var r, g, b;
@@ -2294,7 +1872,4 @@ var THREE = require("three"),
 	};
 
 	w.ParticleSystemBatcher = ParticleSystemBatcher;
-
-	// Export danger zone controller
-	w.getDangerZoneController = getDangerZoneController;
 })(module.exports);

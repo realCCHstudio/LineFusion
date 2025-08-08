@@ -64,6 +64,21 @@
             /* 隐藏后不再响应鼠标事件 */
             pointer-events: none;
         }
+        #fit-console-output {
+            background-color: #2b2b2b;
+            color: #f0f0f0;
+            font-family: monospace;
+            padding: 10px;
+            border-radius: 4px;
+            height: 150px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-size: 12px;
+            user-select: text !important; /* 允许用户选择和复制文本, !important 提升优先级 */
+            -webkit-user-select: text !important; /* 兼容旧版 Webkit 内核 */
+            cursor: text; /* 鼠标光标变为文本输入样式 */
+        }
     </style>
 </head>
 <body data-custom-load="true" data-name="plasio_laszip"
@@ -133,19 +148,39 @@
                 </div>
             </div>
         </div>
+
         <div class="section">
             <div class="p-head">
-                <h3>电力线提取</h3>
+                <h3>电力线处理流程</h3>
             </div>
             <div class="p-body">
                 <div class="labeled-controls">
-                    <h4>自动提取</h4>
-                    <h5>自动识别并提取点云中的电力线。</h5>
-                    <button type="button" class="btn btn-primary btn-block" id="extract-powerline-btn" disabled>
-                        <span class="btn-text">提取电力线</span>
-                        <span class="spinner"></span>
+                    <h4>1. 电力线与地面粗提取</h4>
+                    <h5>运行脚本，将地面点与非地面点（潜在电力线）分离。</h5>
+                    <button type="button" class="btn btn-primary btn-block" id="run-step1-btn" disabled>
+                        <span class="btn-text">运行粗提取</span>
+                        <span class="spinner" style="display: none;"></span>
                     </button>
-                    <small id="powerline-status" class="status-text"></small>
+                    <small id="step1-status" class="status-text"></small>
+                </div>
+                <div class="labeled-controls">
+                    <h4>2. 电塔提取和电力线分段</h4>
+                    <h5>识别电塔，并对导线进行分段和拓扑发现。</h5>
+                    <button type="button" class="btn btn-info btn-block" id="run-step2-btn" disabled>
+                        <span class="btn-text">运行电塔和分段</span>
+                        <span class="spinner" style="display: none;"></span>
+                    </button>
+                    <small id="step2-status" class="status-text"></small>
+                </div>
+                <div class="labeled-controls">
+                    <h4>运行日志</h4>
+                    <h5>实时显示电力线处理脚本的运行过程。</h5>
+                    <pre id="fit-console-output"></pre>
+                </div>
+                <div class="labeled-controls">
+                    <h4>属性信息</h4>
+                    <div id="properties-content">
+                    </div>
                 </div>
             </div>
         </div>
@@ -298,14 +333,32 @@
 </div>
 
 <div id="listener"></div>
+<div class="modal fade" id="propertiesModal" tabindex="-1" role="dialog" aria-labelledby="propertiesModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                <h4 class="modal-title" id="propertiesModalLabel">电力线属性信息</h4>
+            </div>
+            <div class="modal-body" id="propertiesModalBody">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+            </div>
+        </div>
+    </div>
+</div>
 
+
+<!--<script src="bad.js"></script>-->
+<!--<script src="client.js"></script>-->
 <!-- Modal -->
 <div class="modal fade" id="creditsPage" tabindex="-1" role="dialog" aria-labelledby="creditsPageModal" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
                 <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-                <h4 class="modal-title">plas.io 数据来源</h4>
+                <h4 class="modal-title">Linefusion 数据来源</h4>
 
             </div>
             <div class="modal-body">

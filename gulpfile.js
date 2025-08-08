@@ -48,7 +48,8 @@ var paths = {
     build    : './build/',
 
     // ===== [修改] 1. 在这里添加新文件的路径 =====
-    pythonScript: 'lasprocess.py'
+    pythonScript: 'lasprocess.py',
+    fitScript: 'fit.py'
 };
 
 /**
@@ -177,6 +178,10 @@ gulp.task('python', function() {
         .pipe(gulp.dest(paths.build));
 });
 
+gulp.task('fit-script', function() {
+    return gulp.src(paths.fitScript)
+        .pipe(gulp.dest(paths.build));
+});
 
 // 构建客户端 JS
 gulp.task('scripts', function() {
@@ -276,7 +281,8 @@ gulp.task('build',
         'html',
         'docs',
         'images',
-        'python'
+        'python',
+        'fit-script'
     )
 );
 

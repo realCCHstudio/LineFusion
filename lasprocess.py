@@ -124,7 +124,7 @@ def calculate_normalized_height_robust(points, grid_size, percentile):
 
     df['grid_id'] = list(zip(df.gx, df.gy))
     df['ground_z'] = df['grid_id'].map(ground_map)
-    df['ground_z'].fillna(np.min(points[:, 2]), inplace=True)
+    df.loc[:, 'ground_z'] = df['ground_z'].fillna(np.min(points[:, 2]))
 
     print("归一化高程计算完成。")
     return (df['z'] - df['ground_z']).values
