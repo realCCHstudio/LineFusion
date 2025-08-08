@@ -35,6 +35,29 @@ function endsWith(str, s) {
 
 $(function() {
     // ---- 新工作流逻辑的开始 ----
+    const customStyles = `
+        .scrollable-table-container {
+            width: 100%; /* 容器宽度占满父元素 */
+            max-height: 300px; /* 设置一个最大高度，超出则出现垂直滚动条 */
+            overflow-x: auto; /* 这是关键：当内容超出时，启用水平滚动条 */
+            overflow-y: auto; /* 允许垂直滚动 */
+            margin-bottom: 10px; /* 和其他控件保持一些间距 */
+            border: 1px solid #ddd; /* 添加一个边框，让容器区域更明显 */
+            border-radius: 4px; /* 轻微的圆角 */
+        }
+
+        .scrollable-table-container table th,
+        .scrollable-table-container table td {
+            white-space: nowrap; /* 这是关键：强制表格单元格内容不换行 */
+        }
+    `;
+
+    // 创建一个<style>标签并将其附加到<head>
+    $('<style>')
+        .prop('type', 'text/css')
+        .html(customStyles)
+        .appendTo('head');
+
     const step1Btn = $('#run-step1-btn');
     const step2Btn = $('#run-step2-btn');
     const step1Status = $('#step1-status');
@@ -74,7 +97,50 @@ $(function() {
             tableHtml += '</tbody></table>';
             propertiesContent.html(tableHtml);
         } else {
-            propertiesContent.html(`<p class="text-muted">暂无属性信息。请确保已成功运行所有处理步骤。</p>`);
+            propertiesContent.html(`<p class="text-muted">暂无电力线属性信息。请确保已成功运行所有处理步骤。</p>`);
+        }
+    }
+
+    async function updateTowerPropertiesModule() {
+        const towerPropertiesContent = $('#tower-properties-content');
+        towerPropertiesContent.html('<p class="text-muted">正在加载电塔信息...</p>');
+        const result = await window.electronAPI.getTowerData();
+
+        if (result.success && result.data) {
+            const data = result.data;
+            if (!Array.isArray(data) || data.length === 0) {
+                towerPropertiesContent.html('<p class="text-muted">暂无电塔属性信息。请继续运行处理步骤。</p>');
+                return;
+            }
+
+            // 定义表头中文映射
+            const headerMap = {
+                "tower_id": "电塔编号",
+                "point_count": "点云数量",
+                "height_m": "高度 (米)",
+                "center_x": "中心X",
+                "center_y": "中心Y",
+                "center_z": "中心Z"
+            };
+
+            let tableHtml = '<table class="table table-striped table-hover table-condensed">';
+            tableHtml += '<thead><tr>';
+            Object.keys(data[0]).forEach(key => {
+                tableHtml += `<th>${headerMap[key] || key}</th>`; // 使用中文表头
+            });
+            tableHtml += '</tr></thead>';
+            tableHtml += '<tbody>';
+            data.forEach(row => {
+                tableHtml += '<tr>';
+                Object.values(row).forEach(value => {
+                    tableHtml += `<td>${value}</td>`;
+                });
+                tableHtml += '</tr>';
+            });
+            tableHtml += '</tbody></table>';
+            towerPropertiesContent.html(tableHtml);
+        } else {
+            towerPropertiesContent.html(`<p class="text-muted">暂无电塔信息。</p>`);
         }
     }
 
@@ -89,6 +155,7 @@ $(function() {
                 step2Status.text('');
                 consoleOutput.text('等待操作...');
                 propertiesContent.html('<p class="text-muted">请运行处理流程以查看属性。</p>');
+                $('#tower-properties-content').html('<p class="text-muted">请运行处理流程以查看电塔属性。</p>');
                 break;
             case 'file_prepared':
                 step1Btn.prop('disabled', false);
@@ -113,6 +180,7 @@ $(function() {
                 step2Btn.prop('disabled', true);
                 step2Status.text('电塔提取和分段完成！');
                 updatePropertiesModule();
+                updateTowerPropertiesModule();
                 break;
         }
     }

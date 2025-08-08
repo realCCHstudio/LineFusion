@@ -48,8 +48,8 @@ var paths = {
     build    : './build/',
 
     // ===== [修改] 1. 在这里添加新文件的路径 =====
-    pythonScript: 'lasprocess.py',
-    fitScript: 'fit.py'
+    pythonScript: 'process_1.py',
+    fitScript: 'process_2.py'
 };
 
 /**

@@ -18,4 +18,5 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
     // 获取属性信息
     getLineData: () => ipcRenderer.invoke('get-line-data'),
+    getTowerData: () => ipcRenderer.invoke('get-tower-data'),
 });

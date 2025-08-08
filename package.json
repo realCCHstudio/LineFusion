@@ -114,8 +114,8 @@
       "package.json",
       "node_modules/**/*",
       "preload.js",
-      "lasprocess.py",
-      "fit.py"
+      "process_1.py",
+      "process_2.py"
     ],
     "extraResources": [
       {
@@ -160,8 +160,8 @@
     "buildDependenciesFromSource": false,
     "asarUnpack": [
       "preload.js",
-      "lasprocess.py",
-      "fit.py",
+      "process_1.py",
+      "process_2.py",
       "resources/python/**/*"
     ],
     "asar": true

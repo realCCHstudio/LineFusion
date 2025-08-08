@@ -74,9 +74,9 @@ ipcMain.handle('prepare-file', async (_evt, sourcePath) => {
     }
 });
 
-// 处理器3: 执行工作流步骤一 (lasprocess.py)
+// 处理器3: 执行工作流步骤一 (process_1.py)
 ipcMain.handle('run-step1-process', (_evt) => {
-    const scriptName = 'lasprocess.py';
+    const scriptName = 'process_1.py';
     const scriptPath = isDev
         ? path.join(__dirname, scriptName)
         : path.join(process.resourcesPath, 'app.asar.unpacked', scriptName);
@@ -111,16 +111,16 @@ ipcMain.handle('run-step1-process', (_evt) => {
     });
 });
 
-// 处理器4: 执行工作流步骤二 (fit.py)
+// 处理器4: 执行工作流步骤二 (process_2.py)
 ipcMain.handle('run-step2-process', (_evt) => {
-    const scriptName = 'fit.py';
+    const scriptName = 'process_2.py';
     const scriptPath = isDev
         ? path.join(__dirname, scriptName)
         : path.join(process.resourcesPath, 'app.asar.unpacked', scriptName);
 
     const inputPath = path.join(processDir, '1.las');
     const outputPath = path.join(processDir, '2.las');
-    // 注意：fit.py 还会生成一个 'linedata.json' 文件在同一目录下
+    // 注意：process_2 还会生成一个 'linedata.json' 文件在同一目录下
 
     console.log(`正在运行步骤 2: ${scriptPath} ${inputPath} ${outputPath}`);
 
@@ -165,7 +165,23 @@ ipcMain.handle('get-line-data', async () => {
         return { success: false, message: `读取或解析JSON文件失败: ${error.message}` };
     }
 });
+// 处理器6: 读取电塔属性信息文件 (tower.json)
+ipcMain.handle('get-tower-data', async () => {
+    const jsonPath = path.join(processDir, 'tower.json');
 
+    if (!fs.existsSync(jsonPath)) {
+        return { success: false, message: '电塔属性文件 (tower.json) 不存在。' };
+    }
+
+    try {
+        const rawData = fs.readFileSync(jsonPath, 'utf8');
+        const data = JSON.parse(rawData);
+        return { success: true, data: data };
+    } catch (error) {
+        console.error(`读取或解析电塔JSON文件失败: ${jsonPath}`, error);
+        return { success: false, message: `读取或解析电塔JSON文件失败: ${error.message}` };
+    }
+});
 
 /* ────────────── 生命周期 ────────────── */
 app.whenReady().then(createWindow);

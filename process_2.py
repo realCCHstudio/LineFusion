@@ -19,6 +19,7 @@ from laspy import LasHeader, LasData, ExtraBytesParams
 import os
 import colorsys
 import sys # 新增：用于处理命令行参数
+import json
 
 CONFIG = {
     # =============================== 文件设置 ===============================
@@ -187,6 +188,34 @@ def main(input_path, output_path):
     tower_centers, tower_segmentation_labels = get_tower_centers(xyz_t, cfg)
     print(f" -> 找到并定位了 {len(tower_centers)} 座独立电塔。")
     if len(tower_centers) < 2: print("电塔数量不足2，无法继续。"); return
+    
+    # 根据电塔的聚类结果生成电塔的json文件以便展示
+    print(" -> 正在生成 tower.json...")
+    tower_info_list = []
+    # 确保 tower_segmentation_labels 不是 None 并且有内容
+    if tower_segmentation_labels is not None and len(tower_segmentation_labels) > 0:
+        for i in range(len(tower_centers)):
+            # 筛选出当前塔簇的所有点
+            cluster_points = xyz_t[tower_segmentation_labels == i]
+            if len(cluster_points) > 0:
+                tower_height = np.max(cluster_points[:, 2]) - np.min(cluster_points[:, 2])
+                point_count = len(cluster_points)
+                
+                tower_info_list.append({
+                    "tower_id": i + 1,
+                    "point_count": int(point_count),
+                    "height_m": float(f"{tower_height:.2f}"),
+                    "center_x": float(f"{tower_centers[i][0]:.2f}"),
+                    "center_y": float(f"{tower_centers[i][1]:.2f}"),
+                    "center_z": float(f"{tower_centers[i][2]:.2f}")
+                })
+
+    # 定义 tower.json 的输出路径，并保存文件
+    tower_json_path = os.path.join(os.path.dirname(output_path), 'tower.json')
+    with open(tower_json_path, 'w', encoding='utf-8') as f:
+        json.dump(tower_info_list, f, indent=4, ensure_ascii=False)
+    print(f" -> 已保存电塔信息到: {tower_json_path}")
+
 
     print("3. 正在通过导线数据发现电塔拓扑...")
     spans = discover_topology_and_spans(tower_centers, xyz_w, cfg)
