@@ -51,9 +51,9 @@ CONFIG = {
 def load_las_file(file_path):
     """加载LAS文件"""
     try:
-        # 移除了不兼容旧版laspy的'encoding'参数
         las = laspy.read(file_path)
         xyz = np.vstack([las.x, las.y, las.z]).T
+        # 确保 process 属性存在，如果不存在则初始化为0
         process = np.array(las.process) if hasattr(las, 'process') else np.zeros(len(xyz), dtype=int)
 
         has_rgb = all(d in las.point_format.dimension_names for d in ('red', 'green', 'blue'))
@@ -62,13 +62,15 @@ def load_las_file(file_path):
         else:
             rgb = np.full((len(xyz), 3), 128, dtype=np.uint8)
 
-        return xyz, process, las.classification, rgb
+        # classification 属性也做同样处理
+        classification = np.array(las.classification) if hasattr(las, 'classification') else np.zeros(len(xyz), dtype=np.uint8)
+        return xyz, process, classification, rgb
     except Exception as e:
         print(f"加载 LAS 文件时出错: {e}")
         return None, None, None, None
 
 # =========================
-# 算法核心函数 (移植自 fit(1).py)
+# 算法核心函数 (与原版一致，无需修改)
 # =========================
 def remove_outliers_wire_aware(xyz, **cfg):
     n = len(xyz)
@@ -207,33 +209,48 @@ def main(input_path, output_path):
     xyz, process, classification, rgb = load_las_file(input_path)
     if xyz is None:
         print("错误: 文件加载失败。")
-        laspy.create().write(output_path)
         sys.exit(1)
 
-    ground_mask = process == 0; tower_mask = process == 1; wire_mask = process >= 2
-    xyz_ground, xyz_tower, xyz_wire = xyz[ground_mask], xyz[tower_mask], xyz[wire_mask]
+    # 1. 根据 process 值分离点云
+    ground_mask = process == 0
+    tower_mask = process == 1
+    wire_mask = process >= 2
+
+    xyz_wire = xyz[wire_mask]
     process_wire = process[wire_mask]
 
-    print(f"地面点: {len(xyz_ground)}, 电塔点: {len(xyz_tower)}, 导线点: {len(xyz_wire)}")
+    print(f"地面点: {np.sum(ground_mask)}, 电塔点: {np.sum(tower_mask)}, 导线点: {len(xyz_wire)}")
     if len(xyz_wire) == 0:
-        print("警告: 没有找到导线点，正在保存空结果文件。")
-        laspy.create(point_format=3, file_version="1.2").write(output_path)
-        with open(os.path.join(os.path.dirname(output_path), 'span.json'), 'w', encoding='utf-8') as f: json.dump([], f)
+        print("警告: 没有找到导线点，正在保存原始文件。")
+        # 直接写入原始数据
+        las = laspy.read(input_path)
+        las.write(output_path)
+        with open(os.path.join(os.path.dirname(output_path), 'span.json'), 'w', encoding='utf-8') as f:
+            json.dump([], f)
         return
 
+    # 准备地面点kd-tree用于计算对地距离
+    xyz_ground = xyz[ground_mask]
     ground_tree = cKDTree(xyz_ground[:, :2]) if len(xyz_ground) > 0 else None
-    unique_processes = np.unique(process_wire)
-    global_wire_labels = np.full(len(xyz_wire), -1, dtype=int)
-    global_label_counter, line_data_list = 0, []
 
+    # 初始化一个与导线点数量相同的标签数组，-1代表未分类
+    global_wire_labels = np.full(len(xyz_wire), -1, dtype=int)
+    global_label_counter = 0
+    line_data_list = []
+
+    # 2. 核心处理流程：遍历每个导线段 (span)
+    unique_processes = np.unique(process_wire)
     for process_val in unique_processes:
         print(f"\n处理跨段 process={process_val}...")
-        span_mask = process_wire == process_val
-        span_xyz, span_indices = xyz_wire[span_mask], np.where(span_mask)[0]
+        span_mask_local = process_wire == process_val
+        span_xyz = xyz_wire[span_mask_local]
+        # 获取当前段在原始 wire_mask 中的索引
+        span_indices_in_wire = np.where(span_mask_local)[0]
+
         if len(span_xyz) < cfg["min_cluster_points"]: continue
 
         print("  去噪...")
-        span_xyz_clean, valid_indices = remove_outliers_wire_aware(span_xyz, **cfg)
+        span_xyz_clean, valid_indices_in_span = remove_outliers_wire_aware(span_xyz, **cfg)
         if len(span_xyz_clean) < cfg["min_cluster_points"]: continue
         print(f"  去噪后点数: {len(span_xyz_clean)}")
 
@@ -241,13 +258,16 @@ def main(input_path, output_path):
         main_dir = get_local_direction_fast(span_xyz_clean)
         if main_dir is None: continue
         clusters, basis = split_parallel_wires_by_lateral(span_xyz_clean, main_dir, cfg)
-        if not clusters: clusters = [{"indices": np.arange(len(span_xyz_clean))}]
+        if not clusters:
+            clusters = [{"indices": np.arange(len(span_xyz_clean))}]
         print(f"  聚类得到 {len(clusters)} 个候选线束")
 
-        valid_span_indices = span_indices[valid_indices]
+        # 将去噪后的点在“当前段”中的索引，映射回在“所有导线点”中的索引
+        valid_span_indices_in_wire = span_indices_in_wire[valid_indices_in_span]
+
         for clu in clusters:
-            local_idx = clu["indices"]
-            sub_points = span_xyz_clean[local_idx]
+            local_idx_in_clean = clu["indices"]
+            sub_points = span_xyz_clean[local_idx_in_clean]
             order_local = constrained_polyline_order(sub_points, basis[0], cfg)
 
             length, sag, clearance = 0.0, 0.0, 0.0
@@ -262,11 +282,14 @@ def main(input_path, output_path):
                     z_line = start_point[2] + np.clip(t, 0, 1) * (end_point[2] - start_point[2])
                     sag = z_line - lowest_point[2]
                 if ground_tree is not None:
-                    _, idx = ground_tree.query(lowest_point[:2], k=min(5, len(xyz_ground)))
-                    if isinstance(idx, (np.ndarray, list)) and len(idx) > 0 and np.all(idx < len(xyz_ground)):
+                    dist, idx = ground_tree.query(lowest_point[:2], k=min(5, len(xyz_ground)))
+                    if np.any(np.isfinite(dist)):
                         clearance = lowest_point[2] - np.mean(xyz_ground[idx, 2])
 
-            global_wire_labels[valid_span_indices[local_idx]] = global_label_counter
+            # 获取这些点在 `global_wire_labels` 数组中对应的最终索引
+            final_indices_in_wire = valid_span_indices_in_wire[local_idx_in_clean]
+            global_wire_labels[final_indices_in_wire] = global_label_counter
+
             line_data_list.append({
                 "编号": int(global_label_counter + 1), "所属段": int(process_val),
                 "点云数量": int(len(sub_points)), "长度(m)": round(length, 2),
@@ -276,44 +299,91 @@ def main(input_path, output_path):
             print(f"    导线 {global_label_counter + 1}: {len(sub_points)} 点, 长度 {length:.1f}m, 弧垂 {sag:.2f}m, 对地距离 {clearance:.2f}m")
             global_label_counter += 1
 
+    # 3. 保存JSON结果
     json_outfile = os.path.join(os.path.dirname(output_path), 'span.json')
     with open(json_outfile, 'w', encoding='utf-8') as f:
         json.dump(line_data_list, f, indent=4, ensure_ascii=False)
     print(f"\n* 线路属性已保存到 {json_outfile}")
 
-    print("\n正在生成输出文件...")
+    # =================================================================
+    # 4. 【核心修改】数据重组与LAS文件生成
+    # =================================================================
+    print("\n正在生成输出文件 (采用数据重组方式)...")
+
+    # 4.1 定义调色板和固定颜色
+    palette = np.array([
+        [255, 127, 14], [44, 160, 44], [214, 39, 40], [148, 103, 189],
+        [31, 119, 180], [140, 86, 75], [227, 119, 194], [127, 127, 127],
+        [188, 189, 34], [23, 190, 207]
+    ], dtype=np.uint8)
+    ground_color = np.array([139, 69, 19], dtype=np.uint8)   # 棕色/橘色
+    tower_color = np.array([173, 216, 230], dtype=np.uint8)  # 浅蓝色
+    default_color = np.array([128, 128, 128], dtype=np.uint8) # 灰色
+
+    # 4.2 分离出不同类别的点云数据
+    xyz_ground = xyz[ground_mask]
+    xyz_tower = xyz[tower_mask]
+
+    # 进一步分离导线点：成功分类的 vs. 未成功分类的(噪声)
+    processed_wire_mask = global_wire_labels != -1
+    unprocessed_wire_mask = global_wire_labels == -1
+
+    xyz_wire_ok = xyz_wire[processed_wire_mask]
+    xyz_wire_noise = xyz_wire[unprocessed_wire_mask]
+
+    # 4.3 为每个类别创建对应的属性数组
+
+    # -- 颜色 --
+    rgb_ground = np.tile(ground_color, (len(xyz_ground), 1))
+    rgb_tower = np.tile(tower_color, (len(xyz_tower), 1))
+    rgb_wire_noise = np.tile(default_color, (len(xyz_wire_noise), 1))
+    # 为成功分类的导线根据ID应用调色板
+    labels_ok = global_wire_labels[processed_wire_mask]
+    rgb_wire_ok = palette[labels_ok % len(palette)]
+
+    # -- 分类 (Classification) --
+    # 采用标准分类值: 2=地面, 6=建筑(电塔), 14=导线, 1=未分类
+    cls_ground = np.full(len(xyz_ground), 2, dtype=np.uint8)
+    cls_tower = np.full(len(xyz_tower), 6, dtype=np.uint8)
+    cls_wire_ok = np.full(len(xyz_wire_ok), 14, dtype=np.uint8)
+    cls_wire_noise = np.full(len(xyz_wire_noise), 1, dtype=np.uint8)
+
+    # -- 线路ID (line_id) --
+    lid_ground = np.zeros(len(xyz_ground), dtype=np.uint16)
+    lid_tower = np.zeros(len(xyz_tower), dtype=np.uint16)
+    lid_wire_ok = (labels_ok + 1).astype(np.uint16) # ID从1开始
+    lid_wire_noise = np.zeros(len(xyz_wire_noise), dtype=np.uint16)
+
+    # -- 段ID (process_id) --
+    pid_ground = process[ground_mask].astype(np.uint16)
+    pid_tower = process[tower_mask].astype(np.uint16)
+    pid_wire_ok = process_wire[processed_wire_mask].astype(np.uint16)
+    pid_wire_noise = process_wire[unprocessed_wire_mask].astype(np.uint16)
+
+    # 4.4 按相同顺序安全地堆叠所有数据
+    # 顺序: 地面 -> 电塔 -> 已分类导线 -> 噪声导线
+    final_xyz = np.vstack((xyz_ground, xyz_tower, xyz_wire_ok, xyz_wire_noise))
+    final_rgb = np.vstack((rgb_ground, rgb_tower, rgb_wire_ok, rgb_wire_noise))
+    final_classification = np.hstack((cls_ground, cls_tower, cls_wire_ok, cls_wire_noise))
+    final_line_id = np.hstack((lid_ground, lid_tower, lid_wire_ok, lid_wire_noise))
+    final_process_id = np.hstack((pid_ground, pid_tower, pid_wire_ok, pid_wire_noise))
+
+    # 4.5 创建LAS对象并写入数据
     hdr = LasHeader(point_format=3, version="1.2")
     hdr.add_extra_dim(ExtraBytesParams(name="line_id", type="uint16"))
     hdr.add_extra_dim(ExtraBytesParams(name="process_id", type="uint16"))
     out = LasData(hdr)
-    out.xyz = xyz
-    palette = np.array([[31,119,180],[255,127,14],[44,160,44],[214,39,40],[148,103,189]], dtype=np.uint8)
-    rgb_all = np.full((len(xyz), 3), 128, dtype=np.uint8)
-    rgb_all[ground_mask] = np.array([139, 69, 19])
-    rgb_all[tower_mask] = np.array([173, 216, 230])
-    valid_wire_mask = global_wire_labels != -1
-    if np.any(valid_wire_mask):
-        rgb_all[wire_mask][valid_wire_mask] = palette[global_wire_labels[valid_wire_mask] % len(palette)]
 
-    out.red = (rgb_all[:, 0].astype(np.uint16) << 8)
-    out.green = (rgb_all[:, 1].astype(np.uint16) << 8)
-    out.blue = (rgb_all[:, 2].astype(np.uint16) << 8)
-
-    classification_all = np.zeros(len(xyz), dtype=np.uint8)
-    classification_all[ground_mask] = 0
-    classification_all[tower_mask] = 2
-    classification_all[wire_mask] = 1
-    out.classification = classification_all
-
-    out.line_id = np.zeros(len(xyz), dtype=np.uint16)
-    if np.any(valid_wire_mask):
-        line_ids_full = np.zeros(len(xyz_wire), dtype=np.uint16)
-        line_ids_full[valid_wire_mask] = (global_wire_labels[valid_wire_mask] + 1)
-        out.line_id[wire_mask] = line_ids_full
-    out.process_id = process.astype(np.uint16)
+    out.xyz = final_xyz
+    out.red = final_rgb[:, 0].astype(np.uint16) << 8
+    out.green = final_rgb[:, 1].astype(np.uint16) << 8
+    out.blue = final_rgb[:, 2].astype(np.uint16) << 8
+    out.classification = final_classification
+    out.line_id = final_line_id
+    out.process_id = final_process_id
 
     out.write(output_path)
-    final_wire_count = len(np.unique(global_wire_labels[global_wire_labels != -1]))
+    final_wire_count = len(np.unique(labels_ok))
     print(f"* 保存 {output_path} — 最终导线数: {final_wire_count}")
 
 # =========================

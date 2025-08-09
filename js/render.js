@@ -1476,12 +1476,14 @@ require("binary-loader");
 			for (var i = 0, il = scaleObjects.length ; i < il ; i ++) {
 				scaleObjects[i].scale.set(d.scale, d.scale, d.scale);
 			}
+			needRefresh = true;
 		});
 
 
 		$(document).on('plasio.render.toggleClip', function(e) {
 			console.log('toggling');
 			toggleActivate = !toggleActivate;
+			needRefresh = true;
 		});
 
 
@@ -1491,16 +1493,19 @@ require("binary-loader");
 				getInundationPlane().show();
 			else
 				getInundationPlane().hide();
+			needRefresh = true;
 		});
 
 		$(document).on('plasio.inundationChanged', function(e) {
 			var l = currentInundationLevel();
 			getInundationPlane().place(l);
+			needRefresh = true;
 		});
 
 		$(document).on('plasio.inundationOpacityChanged', function() {
 			var o = currentInundationOpacity();
 			getInundationPlane().setOpacity(o/100.0);
+			needRefresh = true;
 		});
 	}
 
