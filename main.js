@@ -216,6 +216,84 @@ ipcMain.handle('get-span-data', async () => {
         return { success: false, message: `读取或解析span.json文件失败: ${error.message}` };
     }
 });
+
+ipcMain.handle('open-reconstruction-window', () => {
+    // 1. 立刻创建一个新窗口
+    let reconWindow = new BrowserWindow({
+        width: 1000,
+        height: 700,
+        title: '三维重建视图',
+        webPreferences: {
+            preload: preloadPath, // 复用同一个 preload.js
+            nodeIntegration: false,
+            contextIsolation: true,
+            sandbox: false
+        }
+    });
+
+    if (isDev) {
+        reconWindow.loadURL('http://localhost:8000/reconstruction.html');
+    } else {
+        reconWindow.loadFile(path.join(__dirname, 'build', 'reconstruction.html'));
+    }
+
+    // !!! 关键：为新窗口打开开发者工具，方便调试！
+    reconWindow.webContents.openDevTools();
+
+    reconWindow.on('closed', () => {
+        reconWindow = null;
+    });
+
+    // 2. 在窗口显示后，再在后台运行Python脚本
+    const scriptName = 'process_4_export.py';
+    const scriptPath = isDev
+        ? path.join(__dirname, scriptName)
+        : path.join(process.resourcesPath, 'app.asar.unpacked', scriptName);
+
+    const inputPath = path.join(processDir, '3.las');
+    const outputPath = path.join(processDir, 'webgl_data.json');
+
+    console.log(`后台导出数据: ${inputPath} -> ${outputPath}`);
+
+    const child = execFile(
+        pythonExe,
+        [scriptPath, inputPath, outputPath],
+        { env: { ...process.env, PYTHONHOME: '', PYTHONPATH: '' }, cwd: processDir, encoding: 'buffer' }
+    );
+
+    child.stdout.on('data', d => console.log(iconv.decode(d, 'gbk')));
+    child.stderr.on('data', d => console.error(`[导出错误] ${iconv.decode(d, 'gbk')}`));
+
+    child.on('close', code => {
+        if (code !== 0 || !fs.existsSync(outputPath)) {
+            dialog.showErrorBox('三维重建错误', '无法生成用于重建的数据文件。请查看主进程日志获取详细信息。');
+            return;
+        }
+
+        console.log('数据导出成功，正在通知渲染窗口...');
+
+        // 3. 脚本成功后，向新窗口发送“数据已就绪”的通知
+        if (reconWindow) {
+            reconWindow.webContents.send('data-ready');
+        }
+    });
+});
+
+// 处理器: 为新窗口提供重建所需的数据
+ipcMain.handle('get-reconstruction-data', async () => {
+    const jsonPath = path.join(processDir, 'webgl_data.json');
+    if (!fs.existsSync(jsonPath)) {
+        return { success: false, message: '重建数据文件 (webgl_data.json) 不存在。' };
+    }
+    try {
+        const rawData = fs.readFileSync(jsonPath, 'utf8');
+        return { success: true, data: JSON.parse(rawData) };
+    } catch (error) {
+        console.error('读取 webgl_data.json 失败:', error);
+        return { success: false, message: error.message };
+    }
+});
+
 /* ────────────── 生命周期 ────────────── */
 app.whenReady().then(createWindow);
 app.on('activate', () => {

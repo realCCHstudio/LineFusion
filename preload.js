@@ -24,4 +24,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
     // 获取属性信息
     getTowerData: () => ipcRenderer.invoke('get-tower-data'),
     getSpanData: () => ipcRenderer.invoke('get-span-data'),
+
+    getReconstructionData: () => ipcRenderer.invoke('get-reconstruction-data'),
+
+    // --- 三维重建 (调用主进程) ---
+    openReconstructionWindow: () => ipcRenderer.invoke('open-reconstruction-window'),
+    onDataReady: (callback) => ipcRenderer.on('data-ready', () => callback())
 });

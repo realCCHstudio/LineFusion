@@ -46,11 +46,15 @@ var paths = {
     docs     : 'docs/**/*',
     images   : 'resources/images/**/*',
     build    : './build/',
+    vendor: 'vendor/**/*',
 
     // ===== [修改] 1. 在这里添加新文件的路径 =====
     pythonScript: 'process_1.py',
     fitScript: 'process_2.py',
-    process3Script: 'process_3.py'
+    process3Script: 'process_3.py',
+    process4Script: 'process_4_export.py',
+    reconstructionHTML: 'reconstruction.html',
+    reconstructionScript: 'js/reconstruction.js'
 };
 
 /**
@@ -187,6 +191,27 @@ gulp.task('process3-script', function() {
     return gulp.src(paths.process3Script)
         .pipe(gulp.dest(paths.build));
 });
+
+gulp.task('process4-script', function() { // <--- 新增
+    return gulp.src(paths.process4Script)
+        .pipe(gulp.dest(paths.build));
+});
+
+gulp.task('reconstruction-html', function() {
+    return gulp.src(paths.reconstructionHTML)
+        .pipe(gulp.dest(paths.build));
+});
+
+gulp.task('reconstruction-script', function() {
+    return gulp.src(paths.reconstructionScript)
+        .pipe(gulp.dest(paths.build));
+});
+
+gulp.task('vendor-scripts', function() {
+    return gulp.src(paths.vendor)
+        .pipe(gulp.dest(path.join(paths.build, 'vendor')));
+});
+
 // 构建客户端 JS
 gulp.task('scripts', function() {
     return browserify({
@@ -287,7 +312,11 @@ gulp.task('build',
         'images',
         'python',
         'fit-script',
-        'process3-script'
+        'process3-script',
+        'process4-script',
+        'reconstruction-html',
+        'reconstruction-script',
+        'vendor-scripts'
     )
 );
 

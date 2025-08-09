@@ -64,6 +64,8 @@ $(function() {
     const step1Status = $('#step1-status');
     const step2Status = $('#step2-status');
     const step3Status = $('#step3-status');
+    const reconstructionBtn = $('#reconstruction-btn');
+    const reconstructionStatus = $('#reconstruction-status');
     const consoleOutput = $('#fit-console-output');
     const browseBtn = $('#browse');
     const propertiesContent = $('#properties-content');
@@ -162,10 +164,14 @@ $(function() {
         console.log("正在为状态更新UI:", workflowState);
         step1Btn.prop('disabled', true).find('.spinner').hide();
         step2Btn.prop('disabled', true).find('.spinner').hide();
+        step3Btn.prop('disabled', true).find('.spinner').hide();
+        reconstructionBtn.prop('disabled', true);
         switch (workflowState) {
             case 'initial':
                 step1Status.text('请先通过“浏览”按钮加载文件。');
                 step2Status.text('');
+                step3Status.text('');
+                reconstructionStatus.text('完成所有处理步骤后可用。');
                 consoleOutput.text('等待操作...');
                 propertiesContent.html('<p class="text-muted">请运行处理流程以查看属性。</p>');
                 $('#tower-properties-content').html('<p class="text-muted">请运行处理流程以查看电塔属性。</p>');
@@ -204,6 +210,8 @@ $(function() {
                 step1Btn.prop('disabled', true);
                 step2Btn.prop('disabled', true);
                 step3Btn.prop('disabled', true);
+                reconstructionBtn.prop('disabled', false);
+                reconstructionStatus.text('可以启动三维重建。');
                 step3Status.text('电力线细提取和分根完成！');
                 updateTowerPropertiesModule(); // 重新加载，以防万一
                 updateSpanPropertiesModule(); // 加载最终的电力线信息
@@ -291,6 +299,12 @@ $(function() {
         consoleOutput.append('--- 步骤 3 完成. 正在加载 `3.las`... ---\n');
         updateUI('step3_complete');
         loadFileInViewer(outputPath, '3.las');
+    });
+
+    reconstructionBtn.on('click', () => {
+        console.log('请求打开三维重建窗口...');
+        // 直接调用main进程的句柄，它会处理后台脚本运行和新窗口创建
+        window.electronAPI.openReconstructionWindow();
     });
 
     // ---- 新工作流逻辑的结束 ----

@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>三维重建视图</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #282c34; color: white; font-family: sans-serif; }
+        canvas { display: block; }
+        #loader {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 1.5em;
+            text-align: center;
+        }
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 4px solid #fff;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+<div id="loader">
+    <div class="spinner"></div>
+    <p>正在准备三维数据，请稍候...</p>
+</div>
+
+<script src="vendor/three.js"></script>
+<script src="vendor/controls/TrackballControls.js"></script>
+<script src="reconstruction.js"></script>
+</body>
+</html>

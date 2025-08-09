@@ -116,7 +116,8 @@
       "preload.js",
       "process_1.py",
       "process_2.py",
-      "process_3.py"
+      "process_3.py",
+      "process_4_export.py"
     ],
     "extraResources": [
       {
@@ -164,6 +165,7 @@
       "process_1.py",
       "process_2.py",
       "process_3.py",
+      "process_4_export.py",
       "resources/python/**/*"
     ],
     "asar": true
